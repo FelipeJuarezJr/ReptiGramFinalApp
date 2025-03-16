@@ -81,73 +81,105 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: const BoxDecoration(
           gradient: AppColors.mainGradient,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 60),
+              Center(
+                child: Image.asset(
+                  'assets/img/reptiGramLogo.png',
+                  height: 120,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'ReptiGram',
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.titleText,
+                  shadows: [
+                    Shadow(
+                      color: AppColors.titleShadow,
+                      offset: Offset(2, 2),
+                      blurRadius: 4,
+                    ),
+                  ],
+                  letterSpacing: 2,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: const InputDecoration(
+                            labelText: 'Password',
+                            border: OutlineInputBorder(),
+                          ),
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
+                          child: const Text('Login'),
+                        ),
+                        const SizedBox(height: 16),
+                        Center(
+                          child: GoogleSignInButton(
+                            onPressed: () async {
+                              final userCredential = await signInWithGoogle();
+                              if (userCredential != null) {
+                                print('Google Sign-In successful');
+                              }
+                            },
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text('Don\'t have an account? Register'),
+                        ),
+                      ],
+                    ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  child: const Text('Login'),
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: GoogleSignInButton(
-                    onPressed: () async {
-                      final userCredential = await signInWithGoogle();
-                      if (userCredential != null) {
-                        print('Google Sign-In successful');
-                      }
-                    },
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('Don\'t have an account? Register'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

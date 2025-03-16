@@ -92,4 +92,28 @@ class AppColors {
     ),
     elevation: 0,
   );
+
+  // Shadow decoration for inputs and buttons
+  static final List<BoxShadow> innerTopShadow = [
+    BoxShadow(
+      color: Colors.white.withOpacity(0.45),
+      offset: const Offset(0, 2),
+      blurRadius: 4,
+      spreadRadius: 0,
+    ),
+  ];
+
+  // Input fields gradient with shadow
+  static BoxDecoration inputDecoration = BoxDecoration(
+    gradient: inputGradient,
+    borderRadius: pillShape,
+    boxShadow: innerTopShadow,
+  );
+
+  // Login button decoration with shadow
+  static BoxDecoration loginButtonDecoration = BoxDecoration(
+    gradient: loginGradient,
+    borderRadius: pillShape,
+    boxShadow: innerTopShadow,
+  );
 }

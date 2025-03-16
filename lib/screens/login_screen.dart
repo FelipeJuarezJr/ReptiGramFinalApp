@@ -88,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: Image.asset(
                   'assets/img/reptiGramLogo.png',
-                  height: 120,
+                  height: 220,
                 ),
               ),
               const SizedBox(height: 20),

@@ -160,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: AppColors.pillButtonStyle,
                           child: Ink(
                             decoration: BoxDecoration(
-                              gradient: AppColors.inputGradient,
+                              gradient: AppColors.loginGradient,
                               borderRadius: AppColors.pillShape,
                             ),
                             child: Container(
@@ -169,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Text(
                                 'Login',
                                 style: TextStyle(
+                                  color: AppColors.buttonText,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),

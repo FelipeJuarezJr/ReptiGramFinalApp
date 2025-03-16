@@ -120,8 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           decoration: const InputDecoration(
                             labelText: 'Email',
-                            border: OutlineInputBorder(),
-                          ),
+                          ).applyDefaults(AppColors.inputDecorationTheme),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter your email';
@@ -134,8 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           decoration: const InputDecoration(
                             labelText: 'Password',
-                            border: OutlineInputBorder(),
-                          ),
+                          ).applyDefaults(AppColors.inputDecorationTheme),
                           obscureText: true,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -147,9 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50),
-                          ),
+                          style: AppColors.pillButtonStyle,
                           child: const Text('Login'),
                         ),
                         const SizedBox(height: 16),
@@ -172,7 +168,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             );
                           },
-                          child: const Text('Don\'t have an account? Register'),
+                          child: const Text(
+                            'Don\'t have an account? Register',
+                            style: TextStyle(
+                              color: AppColors.titleText,
+                            ),
+                          ),
                         ),
                       ],
                     ),

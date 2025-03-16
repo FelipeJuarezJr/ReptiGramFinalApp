@@ -116,37 +116,65 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                          ).applyDefaults(AppColors.inputDecorationTheme),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            return null;
-                          },
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.inputGradient,
+                            borderRadius: AppColors.pillShape,
+                          ),
+                          child: TextFormField(
+                            controller: _emailController,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                            ).applyDefaults(AppColors.inputDecorationTheme),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                          ).applyDefaults(AppColors.inputDecorationTheme),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
-                            }
-                            return null;
-                          },
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.inputGradient,
+                            borderRadius: AppColors.pillShape,
+                          ),
+                          child: TextFormField(
+                            controller: _passwordController,
+                            decoration: const InputDecoration(
+                              labelText: 'Password',
+                            ).applyDefaults(AppColors.inputDecorationTheme),
+                            obscureText: true,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your password';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: _login,
                           style: AppColors.pillButtonStyle,
-                          child: const Text('Login'),
+                          child: Ink(
+                            decoration: BoxDecoration(
+                              gradient: AppColors.inputGradient,
+                              borderRadius: AppColors.pillShape,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Center(

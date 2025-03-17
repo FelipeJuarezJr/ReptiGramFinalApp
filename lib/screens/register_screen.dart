@@ -74,63 +74,128 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.inputGradient,
+                      borderRadius: AppColors.pillShape,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      return null;
-                    },
+                    child: TextFormField(
+                      controller: _usernameController,
+                      decoration: InputDecoration(
+                        labelText: 'Username',
+                        border: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a username';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      border: OutlineInputBorder(),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.inputGradient,
+                      borderRadius: AppColors.pillShape,
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a username';
-                      }
-                      return null;
-                    },
+                    child: TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.inputGradient,
+                      borderRadius: AppColors.pillShape,
                     ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
+                    child: TextFormField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        border: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _isLoading
                       ? const CircularProgressIndicator()
-                      : ElevatedButton(
-                          onPressed: _register,
-                          child: const Text('Register'),
+                      : Container(
+                    width: MediaQuery.of(context).size.width * 0.75,
+                    child: ElevatedButton(
+                      onPressed: _register,
+                      style: AppColors.pillButtonStyle,
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.loginGradient,
+                          borderRadius: AppColors.pillShape,
                         ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'Register',
+                            style: TextStyle(
+                              color: AppColors.buttonText,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: const Text('Already have an account? Login'),
+                    child: const Text(
+                      'Already have an account? Login',
+                      style: TextStyle(
+                        color: AppColors.titleText,
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -57,6 +57,18 @@ class AppColors {
     stops: [0.0, 0.3, 1.0],  // More coverage of the dark color
   );
 
+  // Background gradient
+  static const Gradient backgroundGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      inputGradientStart,
+      inputGradientEnd,
+      inputGradientEnd,
+    ],
+    stops: [0.0, 0.4, 1.0],
+  );
+
   // Input decoration theme
   static final InputDecorationTheme inputDecorationTheme = InputDecorationTheme(
     filled: true,

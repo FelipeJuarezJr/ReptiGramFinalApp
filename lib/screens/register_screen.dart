@@ -63,17 +63,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        height: MediaQuery.of(context).size.height,
         decoration: const BoxDecoration(
           gradient: AppColors.mainGradient,
         ),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 60),
+                  Center(
+                    child: Image.asset(
+                      'assets/img/reptiGramLogo.png',
+                      height: 220,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'ReptiGram',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.titleText,
+                      shadows: [
+                        Shadow(
+                          color: AppColors.titleShadow,
+                          offset: Offset(2, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
                   Container(
                     decoration: BoxDecoration(
                       gradient: AppColors.inputGradient,

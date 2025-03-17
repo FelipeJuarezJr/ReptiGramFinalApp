@@ -155,23 +155,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _login,
-                          style: AppColors.pillButtonStyle,
-                          child: Ink(
-                            decoration: BoxDecoration(
-                              gradient: AppColors.loginGradient,
-                              borderRadius: AppColors.pillShape,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'Login',
-                                style: TextStyle(
-                                  color: AppColors.buttonText,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.5,
+                          child: ElevatedButton(
+                            onPressed: _login,
+                            style: AppColors.pillButtonStyle,
+                            child: Ink(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.loginGradient,
+                                borderRadius: AppColors.pillShape,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'Login',
+                                  style: TextStyle(
+                                    color: AppColors.buttonText,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),

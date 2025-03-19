@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
     clientId: '1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com',
     scopes: ['email', 'profile'],
   );
+  bool _isLoading = false;
 
   Future<UserCredential?> signInWithGoogle() async {
     try {
@@ -48,6 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+      
       try {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
@@ -69,6 +74,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message)),
           );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
         }
       }
     }
@@ -155,31 +166,33 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        Container(
-                          width: MediaQuery.of(context).size.width * 0.5,
-                          child: ElevatedButton(
-                            onPressed: _login,
-                            style: AppColors.pillButtonStyle,
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                gradient: AppColors.loginGradient,
-                                borderRadius: AppColors.pillShape,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    color: AppColors.buttonText,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                        _isLoading
+                            ? const CircularProgressIndicator()
+                            : Container(
+                                width: MediaQuery.of(context).size.width * 0.5,
+                                child: ElevatedButton(
+                                  onPressed: _login,
+                                  style: AppColors.pillButtonStyle,
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.loginGradient,
+                                      borderRadius: AppColors.pillShape,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      alignment: Alignment.center,
+                                      child: const Text(
+                                        'Login',
+                                        style: TextStyle(
+                                          color: AppColors.buttonText,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 16),
                         Center(
                           child: GoogleSignInButton(

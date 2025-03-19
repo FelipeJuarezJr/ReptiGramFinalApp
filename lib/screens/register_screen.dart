@@ -14,10 +14,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
+      if (_passwordController.text != _confirmPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Passwords do not match')),
+        );
+        return;
+      }
+
       setState(() {
         _isLoading = true;
       });
@@ -183,6 +191,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.inputGradient,
+                      borderRadius: AppColors.pillShape,
+                    ),
+                    child: TextFormField(
+                      controller: _confirmPasswordController,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        border: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: AppColors.pillShape,
+                        ),
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please confirm your password';
+                        }
+                        if (value != _passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   _isLoading
                       ? const CircularProgressIndicator()
@@ -236,6 +276,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 } 

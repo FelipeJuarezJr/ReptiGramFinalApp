@@ -4,6 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'register_screen.dart';
 import '../widgets/google_sign_in_button.dart';
 import '../styles/colors.dart';
+import '../screens/post_screen.dart';
+import 'post_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -61,6 +63,12 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Login successful!')),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PostScreen(),
+            ),
           );
         }
       } on FirebaseAuthException catch (e) {

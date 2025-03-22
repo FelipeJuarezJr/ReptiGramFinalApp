@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
 import '../styles/colors.dart';
+import '../screens/albums_screen.dart';
+import '../screens/post_screen.dart';
+import '../screens/feed_screen.dart';
 
 class Header extends StatefulWidget {
-  const Header({super.key});
+  final int initialIndex;
+  
+  const Header({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
   State<Header> createState() => _HeaderState();
 }
 
 class _HeaderState extends State<Header> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
   final GlobalKey<FeedState> _feedKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
 
   Widget _buildNavItem(String title, int index) {
     return GestureDetector(
@@ -18,6 +32,29 @@ class _HeaderState extends State<Header> {
         setState(() {
           _selectedIndex = index;
         });
+        
+        if (index == 0) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PostScreen(),
+            ),
+          );
+        } else if (index == 1) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AlbumsScreen(),
+            ),
+          );
+        } else if (index == 2) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const FeedScreen(),
+            ),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),

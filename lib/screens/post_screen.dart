@@ -33,7 +33,7 @@ class _PostScreenState extends State<PostScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const Header(),
+              const Header(initialIndex: 0),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),

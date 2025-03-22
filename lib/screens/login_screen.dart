@@ -24,28 +24,42 @@ class _LoginScreenState extends State<LoginScreen> {
   );
   bool _isLoading = false;
 
-  Future<UserCredential?> signInWithGoogle() async {
+  Future<void> _handleGoogleSignIn() async {
     try {
-      final GoogleSignInAccount? gUser = await _googleSignIn.signInSilently() ?? 
-                                       await _googleSignIn.signIn();
-      
-      if (gUser == null) return null;
+      setState(() {
+        _isLoading = true;
+      });
 
-      final GoogleSignInAuthentication gAuth = await gUser.authentication;
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
-        accessToken: gAuth.accessToken,
-        idToken: gAuth.idToken,
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
-      return await FirebaseAuth.instance.signInWithCredential(credential);
-    } catch (e) {
-      print('Error signing in with Google: $e');
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error signing in with Google: $e')),
+        // Navigate to PostScreen after successful Google Sign In
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PostScreen(),
+          ),
         );
       }
-      return null;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to sign in with Google')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -204,12 +218,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Center(
                           child: GoogleSignInButton(
-                            onPressed: () async {
-                              final userCredential = await signInWithGoogle();
-                              if (userCredential != null) {
-                                print('Google Sign-In successful');
-                              }
-                            },
+                            onPressed: _handleGoogleSignIn,
                           ),
                         ),
                         TextButton(

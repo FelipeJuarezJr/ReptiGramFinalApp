@@ -3,6 +3,8 @@ import '../styles/colors.dart';
 import '../screens/albums_screen.dart';
 import '../screens/post_screen.dart';
 import '../screens/feed_screen.dart';
+import '../screens/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Header extends StatefulWidget {
   final int initialIndex;

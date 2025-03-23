@@ -65,7 +65,7 @@ class _HeaderState extends State<Header> {
           title,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: _selectedIndex == index ? AppColors.titleText : Colors.grey,
+            color: _selectedIndex == index ? AppColors.titleText : Colors.brown,
             fontWeight: _selectedIndex == index ? FontWeight.bold : FontWeight.normal,
           ),
         ),

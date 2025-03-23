@@ -94,7 +94,7 @@ class _HeaderState extends State<Header> {
                 width: MediaQuery.of(context).size.width / 3,
                 child: Container(
                   height: 2,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: const Color(0xFFf6e29b),
                 ),
               ),
             ],

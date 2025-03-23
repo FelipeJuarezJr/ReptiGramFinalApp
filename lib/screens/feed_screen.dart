@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../common/header.dart';
-import '../screens/login_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../common/title_header.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -23,37 +22,13 @@ class _FeedScreenState extends State<FeedScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Logout button
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16.0, top: 8.0),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.logout,
-                      color: AppColors.titleText,
-                    ),
-                    onPressed: () {
-                      FirebaseAuth.instance.signOut();
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                        (route) => false,
-                      );
-                    },
-                  ),
-                ),
-              ),
+              const TitleHeader(),
               const Header(initialIndex: 2),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      // Feed content will go here
-                      // Placeholder for now
                       Container(
                         padding: const EdgeInsets.all(16.0),
                         child: const Text(

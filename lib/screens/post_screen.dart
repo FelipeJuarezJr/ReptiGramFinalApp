@@ -13,13 +13,11 @@ class PostScreen extends StatefulWidget {
 
 class _PostScreenState extends State<PostScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -66,59 +64,6 @@ class _PostScreenState extends State<PostScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        const SizedBox(height: 60),
-                        Center(
-                          child: Image.asset(
-                            'assets/img/reptiGramLogo.png',
-                            height: 120,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Create Post',
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.titleText,
-                            shadows: [
-                              Shadow(
-                                color: AppColors.titleShadow,
-                                offset: Offset(2, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: AppColors.inputGradient,
-                            borderRadius: AppColors.pillShape,
-                          ),
-                          child: TextFormField(
-                            controller: _titleController,
-                            decoration: InputDecoration(
-                              labelText: 'Title',
-                              border: OutlineInputBorder(
-                                borderRadius: AppColors.pillShape,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: AppColors.pillShape,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: AppColors.pillShape,
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter a title';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         Container(
                           decoration: BoxDecoration(
                             gradient: AppColors.inputGradient,
@@ -128,7 +73,7 @@ class _PostScreenState extends State<PostScreen> {
                             controller: _descriptionController,
                             maxLines: 5,
                             decoration: InputDecoration(
-                              labelText: 'Description',
+                              labelText: 'What\'s happening in the ReptiWorld?',
                               border: OutlineInputBorder(
                                 borderRadius: AppColors.pillShape,
                               ),
@@ -141,7 +86,7 @@ class _PostScreenState extends State<PostScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return 'Please enter a description';
+                                return 'Please enter a Post';
                               }
                               return null;
                             },

@@ -156,8 +156,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: TextFormField(
                             controller: _emailController,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
+                            decoration: InputDecoration(
+                              hintText: 'Email',
+                              hintStyle: const TextStyle(
+                                color: Colors.brown,
+                              ),
                             ).applyDefaults(AppColors.inputDecorationTheme),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -175,8 +178,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: TextFormField(
                             controller: _passwordController,
-                            decoration: const InputDecoration(
-                              labelText: 'Password',
+                            decoration: InputDecoration(
+                              hintText: 'Password',
+                              hintStyle: const TextStyle(
+                                color: Colors.brown,
+                              ),
                             ).applyDefaults(AppColors.inputDecorationTheme),
                             obscureText: true,
                             validator: (value) {

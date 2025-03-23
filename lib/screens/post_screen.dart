@@ -73,7 +73,10 @@ class _PostScreenState extends State<PostScreen> {
                             controller: _descriptionController,
                             maxLines: 5,
                             decoration: InputDecoration(
-                              labelText: 'What\'s happening in the ReptiWorld?',
+                              hintText: 'What\'s happening in the ReptiWorld?',
+                              hintStyle: TextStyle(
+                                color: Colors.grey[600],
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: AppColors.pillShape,
                               ),

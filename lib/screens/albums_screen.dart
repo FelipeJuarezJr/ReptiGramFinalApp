@@ -11,6 +11,8 @@ class AlbumsScreen extends StatefulWidget {
 }
 
 class _AlbumsScreenState extends State<AlbumsScreen> {
+  List<String> albums = ['My Album']; // Initial album, add more as created
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +39,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                             'Create Album',
                             Icons.create_new_folder,
                             () {
-                              // TODO: Navigate to Create Album view
+                              _createNewAlbum();
                             },
                           ),
                           _buildActionButton(
@@ -51,12 +53,18 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                       ),
                       const SizedBox(height: 20),
                       // Albums Grid below
-                      _buildOptionCard(
-                        'Albums',
-                        Icons.photo_album,
-                        () {
-                          // TODO: Navigate to Albums view
-                        },
+                      Expanded(
+                        child: GridView.builder(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          itemCount: albums.length,
+                          itemBuilder: (context, index) {
+                            return _buildAlbumCard(albums[index]);
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -69,11 +77,58 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
     );
   }
 
-  Widget _buildOptionCard(String title, IconData icon, VoidCallback onTap) {
+  void _createNewAlbum() {
+    // Show dialog to enter album name
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String newAlbumName = '';
+        return AlertDialog(
+          backgroundColor: AppColors.dialogBackground,
+          title: const Text(
+            'Create New Album',
+            style: TextStyle(color: AppColors.titleText),
+          ),
+          content: TextField(
+            style: const TextStyle(color: AppColors.titleText),
+            decoration: const InputDecoration(
+              hintText: 'Enter album name',
+              hintStyle: TextStyle(color: Colors.grey),
+            ),
+            onChanged: (value) {
+              newAlbumName = value;
+            },
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Create'),
+              onPressed: () {
+                if (newAlbumName.isNotEmpty) {
+                  setState(() {
+                    albums.add(newAlbumName);
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAlbumCard(String albumName) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        // TODO: Navigate to album contents
+      },
       child: Container(
-        height: 200,  // Set a fixed height for the album card
         decoration: BoxDecoration(
           gradient: AppColors.inputGradient,
           borderRadius: BorderRadius.circular(15),
@@ -88,19 +143,21 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
+            const Icon(
+              Icons.folder,
               size: 48,
               color: AppColors.titleText,
             ),
             const SizedBox(height: 8),
             Text(
-              title,
+              albumName,
               style: const TextStyle(
                 color: AppColors.titleText,
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

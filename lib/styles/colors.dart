@@ -128,4 +128,6 @@ class AppColors {
     borderRadius: pillShape,
     boxShadow: innerTopShadow,
   );
+
+  static const Color dialogBackground = Color(0xFF2C1810);
 }

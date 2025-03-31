@@ -2,22 +2,21 @@ import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
-import '../screens/notebooks_screen.dart';
 
-class BindersScreen extends StatefulWidget {
-  final String albumName;
+class NotebooksScreen extends StatefulWidget {
+  final String binderName;
 
-  const BindersScreen({
+  const NotebooksScreen({
     super.key,
-    required this.albumName,
+    required this.binderName,
   });
 
   @override
-  State<BindersScreen> createState() => _BindersScreenState();
+  State<NotebooksScreen> createState() => _NotebooksScreenState();
 }
 
-class _BindersScreenState extends State<BindersScreen> {
-  List<String> binders = ['Binder 1']; // Initial binder
+class _NotebooksScreenState extends State<NotebooksScreen> {
+  List<String> notebooks = ['Notebook 1']; // Initial notebook
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +41,10 @@ class _BindersScreenState extends State<BindersScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _buildActionButton(
-                            'Create Binder',
+                            'Create Notebook',
                             Icons.create_new_folder,
                             () {
-                              _createNewBinder();
+                              _createNewNotebook();
                             },
                           ),
                           _buildActionButton(
@@ -59,7 +58,7 @@ class _BindersScreenState extends State<BindersScreen> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        widget.albumName,
+                        widget.binderName,
                         style: const TextStyle(
                           color: AppColors.titleText,
                           fontSize: 24,
@@ -67,7 +66,7 @@ class _BindersScreenState extends State<BindersScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Binders Grid below
+                      // Notebooks Grid below
                       Expanded(
                         child: GridView.builder(
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -75,9 +74,9 @@ class _BindersScreenState extends State<BindersScreen> {
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
-                          itemCount: binders.length,
+                          itemCount: notebooks.length,
                           itemBuilder: (context, index) {
-                            return _buildBinderCard(binders[index]);
+                            return _buildNotebookCard(notebooks[index]);
                           },
                         ),
                       ),
@@ -92,25 +91,25 @@ class _BindersScreenState extends State<BindersScreen> {
     );
   }
 
-  void _createNewBinder() {
+  void _createNewNotebook() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        String newBinderName = '';
+        String newNotebookName = '';
         return AlertDialog(
           backgroundColor: AppColors.dialogBackground,
           title: const Text(
-            'Create New Binder',
+            'Create New Notebook',
             style: TextStyle(color: AppColors.titleText),
           ),
           content: TextField(
             style: const TextStyle(color: AppColors.titleText),
             decoration: const InputDecoration(
-              hintText: 'Enter binder name',
+              hintText: 'Enter notebook name',
               hintStyle: TextStyle(color: Colors.grey),
             ),
             onChanged: (value) {
-              newBinderName = value;
+              newNotebookName = value;
             },
           ),
           actions: [
@@ -123,9 +122,9 @@ class _BindersScreenState extends State<BindersScreen> {
             TextButton(
               child: const Text('Create'),
               onPressed: () {
-                if (newBinderName.isNotEmpty) {
+                if (newNotebookName.isNotEmpty) {
                   setState(() {
-                    binders.add(newBinderName);
+                    notebooks.add(newNotebookName);
                   });
                   Navigator.of(context).pop();
                 }
@@ -134,6 +133,43 @@ class _BindersScreenState extends State<BindersScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildNotebookCard(String notebookName) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.inputGradient,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.book,  // Different icon for notebooks
+            size: 48,
+            color: AppColors.titleText,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            notebookName,
+            style: const TextStyle(
+              color: AppColors.titleText,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
@@ -174,51 +210,4 @@ class _BindersScreenState extends State<BindersScreen> {
       ),
     );
   }
-
-  Widget _buildBinderCard(String binderName) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NotebooksScreen(binderName: binderName),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.inputGradient,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.folder_special,
-              size: 48,
-              color: AppColors.titleText,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              binderName,
-              style: const TextStyle(
-                color: AppColors.titleText,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-} 
+}

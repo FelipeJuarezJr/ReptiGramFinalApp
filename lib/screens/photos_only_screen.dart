@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
@@ -16,7 +19,30 @@ class PhotosOnlyScreen extends StatefulWidget {
 }
 
 class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
-  List<String> photos = []; // Will store photo paths
+  final List<dynamic> photos = []; // Will store both Files and XFiles
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          photos.add(pickedFile); // Store XFile directly
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to pick image'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +66,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                       _buildActionButton(
                         'Add Image',
                         Icons.add_photo_alternate,
-                        () {
-                          // TODO: Implement image picker
-                        },
+                        _pickImage,
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -129,26 +153,51 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     );
   }
 
-  Widget _buildPhotoCard(String photoPath) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.inputGradient,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.asset(
-          photoPath,
-          fit: BoxFit.cover,
+  Widget _buildPhotoCard(dynamic photo) {
+    if (kIsWeb) {
+      // For web, use network image from XFile
+      return Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.inputGradient,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
-      ),
-    );
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Image.network(
+            photo.path,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else {
+      // For mobile, use file image
+      return Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.inputGradient,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(15),
+          child: Image.file(
+            File(photo.path),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
   }
 } 

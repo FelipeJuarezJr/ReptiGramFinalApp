@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
+import '../screens/photos_only_screen.dart';
 
 class NotebooksScreen extends StatefulWidget {
   final String binderName;
@@ -137,38 +138,48 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
   }
 
   Widget _buildNotebookCard(String notebookName) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.inputGradient,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 5,
-            offset: const Offset(0, 3),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PhotosOnlyScreen(notebookName: notebookName),
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.book,  // Different icon for notebooks
-            size: 48,
-            color: AppColors.titleText,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            notebookName,
-            style: const TextStyle(
-              color: AppColors.titleText,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.inputGradient,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
             ),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.book,  // Different icon for notebooks
+              size: 48,
+              color: AppColors.titleText,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              notebookName,
+              style: const TextStyle(
+                color: AppColors.titleText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

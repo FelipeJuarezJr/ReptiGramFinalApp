@@ -79,11 +79,16 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Single Action Button for adding images
-                      _buildActionButton(
-                        'Add Image',
-                        Icons.add_photo_alternate,
-                        _pickImage,
+                      // Action Buttons with new layout
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,  // Align to right
+                        children: [
+                          _buildSmallActionButton(
+                            'Add Image',
+                            Icons.add_photo_alternate,
+                            _pickImage,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -132,7 +137,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     );
   }
 
-  Widget _buildActionButton(String title, IconData icon, VoidCallback onTap) {
+  Widget _buildSmallActionButton(String title, IconData icon, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Container(

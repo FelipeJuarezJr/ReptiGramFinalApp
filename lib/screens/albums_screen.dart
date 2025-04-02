@@ -32,6 +32,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
+                      const SizedBox(height: 60.0),
                       // Action Buttons at the top
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -52,7 +53,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 74),
                       // Albums Grid below
                       Expanded(
                         child: GridView.builder(

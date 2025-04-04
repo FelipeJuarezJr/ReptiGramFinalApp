@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
 
 class PhotosOnlyScreen extends StatefulWidget {
   final String notebookName;
@@ -20,11 +22,13 @@ class PhotosOnlyScreen extends StatefulWidget {
 
 class PhotoData {
   final dynamic file; // XFile or File
+  final String? firebaseUrl;
   String title;
   bool isLiked;
 
   PhotoData({
     required this.file,
+    this.firebaseUrl,
     this.title = 'Photo Details',
     this.isLiked = false,
   });
@@ -33,6 +37,41 @@ class PhotoData {
 class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   final List<PhotoData> photos = [];
   final ImagePicker _picker = ImagePicker();
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  Future<String?> _uploadImageToFirebase(XFile pickedFile) async {
+    try {
+      // Create a unique file name
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(pickedFile.path)}';
+      
+      // Create a reference to the file location
+      final Reference ref = _storage.ref().child('photos/$fileName');
+      
+      // Upload the file
+      if (kIsWeb) {
+        // For web, we need to upload bytes
+        final bytes = await pickedFile.readAsBytes();
+        await ref.putData(bytes);
+      } else {
+        // For mobile, we can upload the file directly
+        await ref.putFile(File(pickedFile.path));
+      }
+      
+      // Get the download URL
+      final String downloadURL = await ref.getDownloadURL();
+      return downloadURL;
+      
+    } catch (e) {
+      print('Error uploading image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to upload image'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return null;
+    }
+  }
 
   Future<void> _pickImage() async {
     try {
@@ -42,9 +81,31 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
       );
 
       if (pickedFile != null) {
-        setState(() {
-          photos.add(PhotoData(file: pickedFile));
-        });
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          },
+        );
+
+        // Upload to Firebase
+        final String? downloadURL = await _uploadImageToFirebase(pickedFile);
+        
+        // Hide loading indicator
+        Navigator.pop(context);
+
+        if (downloadURL != null) {
+          setState(() {
+            photos.add(PhotoData(
+              file: pickedFile,
+              firebaseUrl: downloadURL,
+            ));
+          });
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

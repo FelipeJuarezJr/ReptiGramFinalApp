@@ -177,49 +177,92 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
 
   Widget _buildPhotoCard(dynamic photo) {
     if (kIsWeb) {
-      // For web, use network image from XFile
-      return Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.inputGradient,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+      return InkWell(
+        onTap: () => _showEnlargedImage(photo.path, true),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.inputGradient,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.network(
+              photo.path,
+              fit: BoxFit.cover,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
-          child: Image.network(
-            photo.path,
-            fit: BoxFit.cover,
           ),
         ),
       );
     } else {
-      // For mobile, use file image
-      return Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.inputGradient,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+      return InkWell(
+        onTap: () => _showEnlargedImage(photo.path, false),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.inputGradient,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.file(
+              File(photo.path),
+              fit: BoxFit.cover,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
-          child: Image.file(
-            File(photo.path),
-            fit: BoxFit.cover,
           ),
         ),
       );
     }
+  }
+
+  void _showEnlargedImage(String imagePath, bool isWeb) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Stack(
+            children: [
+              // Image
+              InteractiveViewer(
+                panEnabled: true,
+                minScale: 0.5,
+                maxScale: 4,
+                child: isWeb
+                    ? Image.network(imagePath)
+                    : Image.file(File(imagePath)),
+              ),
+              // Close button
+              Positioned(
+                right: 0,
+                top: 0,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 } 

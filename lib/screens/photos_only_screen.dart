@@ -18,8 +18,20 @@ class PhotosOnlyScreen extends StatefulWidget {
   State<PhotosOnlyScreen> createState() => _PhotosOnlyScreenState();
 }
 
+class PhotoData {
+  final dynamic file; // XFile or File
+  String title;
+  bool isLiked;
+
+  PhotoData({
+    required this.file,
+    this.title = 'Photo Details',
+    this.isLiked = false,
+  });
+}
+
 class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
-  final List<dynamic> photos = []; // Will store both Files and XFiles
+  final List<PhotoData> photos = [];
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage() async {
@@ -31,7 +43,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
 
       if (pickedFile != null) {
         setState(() {
-          photos.add(pickedFile); // Store XFile directly
+          photos.add(PhotoData(file: pickedFile));
         });
       }
     } catch (e) {
@@ -175,10 +187,10 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     );
   }
 
-  Widget _buildPhotoCard(dynamic photo) {
+  Widget _buildPhotoCard(PhotoData photo) {
     if (kIsWeb) {
       return InkWell(
-        onTap: () => _showEnlargedImage(photo.path, true),
+        onTap: () => _showEnlargedImage(photo),
         child: Container(
           decoration: BoxDecoration(
             gradient: AppColors.inputGradient,
@@ -191,18 +203,74 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.network(
-              photo.path,
-              fit: BoxFit.cover,
-            ),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.network(
+                  photo.file.path,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+              // Title overlay
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(15),
+                      topRight: Radius.circular(15),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    photo.title,  // Use the stored title
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              // Like icon
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: photo.isLiked ? Colors.red : Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
     } else {
       return InkWell(
-        onTap: () => _showEnlargedImage(photo.path, false),
+        onTap: () => _showEnlargedImage(photo),
         child: Container(
           decoration: BoxDecoration(
             gradient: AppColors.inputGradient,
@@ -215,22 +283,78 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.file(
-              File(photo.path),
-              fit: BoxFit.cover,
-            ),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(15),
+                child: Image.file(
+                  File(photo.file.path),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              ),
+              // Title overlay
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(15),
+                      topRight: Radius.circular(15),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    photo.title,  // Use the stored title
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              // Like icon
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: photo.isLiked ? Colors.red : Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
   }
 
-  void _showEnlargedImage(String imagePath, bool isWeb) {
-    String photoTitle = 'Photo Details';
+  void _showEnlargedImage(PhotoData photo) {
+    String photoTitle = photo.title;
     String comment = '';
-    bool isLiked = false;
+    bool isLiked = photo.isLiked;
     bool hasUnsavedChanges = false;
     String originalTitle = photoTitle;
     String originalComment = comment;
@@ -354,9 +478,22 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                                         TextButton(
                                           child: const Text('Save'),
                                           onPressed: () {
-                                            // TODO: Implement save functionality
-                                            Navigator.of(context).pop();
-                                            Navigator.of(context).pop();
+                                            setState(() {
+                                              originalTitle = photoTitle;
+                                              originalComment = comment;
+                                              hasUnsavedChanges = false;
+                                              // Update the photo data
+                                              photo.title = photoTitle;
+                                              photo.isLiked = isLiked;
+                                            });
+                                            // Update the main state to reflect changes
+                                            this.setState(() {});
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Changes saved successfully!'),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
                                           },
                                         ),
                                       ],
@@ -377,9 +514,9 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                         panEnabled: true,
                         minScale: 0.5,
                         maxScale: 4,
-                        child: isWeb
-                            ? Image.network(imagePath)
-                            : Image.file(File(imagePath)),
+                        child: kIsWeb
+                            ? Image.network(photo.file.path)
+                            : Image.file(File(photo.file.path)),
                       ),
                     ),
                     // Comment section
@@ -446,7 +583,12 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                                   originalTitle = photoTitle;
                                   originalComment = comment;
                                   hasUnsavedChanges = false;
+                                  // Update the photo data
+                                  photo.title = photoTitle;
+                                  photo.isLiked = isLiked;
                                 });
+                                // Update the main state to reflect changes
+                                this.setState(() {});
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Changes saved successfully!'),

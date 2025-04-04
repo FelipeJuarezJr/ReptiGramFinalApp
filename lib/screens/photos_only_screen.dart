@@ -231,6 +231,9 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     String photoTitle = 'Photo Details';
     String comment = '';
     bool isLiked = false;
+    bool hasUnsavedChanges = false;
+    String originalTitle = photoTitle;
+    String originalComment = comment;
 
     showDialog(
       context: context,
@@ -256,7 +259,6 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                           Expanded(
                             child: InkWell(
                               onTap: () {
-                                // Show dialog to edit title
                                 showDialog(
                                   context: context,
                                   builder: (BuildContext context) {
@@ -290,6 +292,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                                           onPressed: () {
                                             setState(() {
                                               photoTitle = newTitle;
+                                              hasUnsavedChanges = photoTitle != originalTitle || comment != originalComment;
                                             });
                                             Navigator.of(context).pop();
                                           },
@@ -326,7 +329,43 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                               size: 30,
                             ),
                             onPressed: () {
-                              Navigator.of(context).pop();
+                              if (hasUnsavedChanges) {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      backgroundColor: AppColors.dialogBackground,
+                                      title: const Text(
+                                        'Unsaved Changes',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      content: const Text(
+                                        'Do you want to save your changes?',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('Discard'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: const Text('Save'),
+                                          onPressed: () {
+                                            // TODO: Implement save functionality
+                                            Navigator.of(context).pop();
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              } else {
+                                Navigator.of(context).pop();
+                              }
                             },
                           ),
                         ],
@@ -356,38 +395,67 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                           ),
                         ),
                         onChanged: (value) {
-                          comment = value;
+                          setState(() {
+                            comment = value;
+                            hasUnsavedChanges = photoTitle != originalTitle || comment != originalComment;
+                          });
                         },
                       ),
                     ),
-                    // Footer with timestamp and like button
+                    // Footer with timestamp, like button, and save button
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
                         children: [
-                          // Timestamp
-                          Text(
-                            DateTime.now().toString().split('.')[0],
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                DateTime.now().toString().split('.')[0],
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  isLiked ? Icons.favorite : Icons.favorite_border,
+                                  color: isLiked ? Colors.red : Colors.white,
+                                  size: 28,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    isLiked = !isLiked;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                          // Like button
-                          IconButton(
-                            icon: Icon(
-                              isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: isLiked ? Colors.red : Colors.white,
-                              size: 28,
+                          if (hasUnsavedChanges)
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () {
+                                // TODO: Implement save functionality
+                                setState(() {
+                                  originalTitle = photoTitle;
+                                  originalComment = comment;
+                                  hasUnsavedChanges = false;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Changes saved successfully!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              },
+                              child: const Text('Save Changes'),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                isLiked = !isLiked;
-                              });
-                              // TODO: Implement persistent storage for likes
-                            },
-                          ),
                         ],
                       ),
                     ),

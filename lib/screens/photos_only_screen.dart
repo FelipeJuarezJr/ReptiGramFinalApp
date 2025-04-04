@@ -228,39 +228,174 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   }
 
   void _showEnlargedImage(String imagePath, bool isWeb) {
+    String photoTitle = 'Photo Details';
+    String comment = '';
+    bool isLiked = false;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Stack(
-            children: [
-              // Image
-              InteractiveViewer(
-                panEnabled: true,
-                minScale: 0.5,
-                maxScale: 4,
-                child: isWeb
-                    ? Image.network(imagePath)
-                    : Image.file(File(imagePath)),
-              ),
-              // Close button
-              Positioned(
-                right: 0,
-                top: 0,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with editable title and close button
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                // Show dialog to edit title
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    String newTitle = photoTitle;
+                                    return AlertDialog(
+                                      backgroundColor: AppColors.dialogBackground,
+                                      title: const Text(
+                                        'Edit Title',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      content: TextField(
+                                        style: const TextStyle(color: Colors.white),
+                                        decoration: const InputDecoration(
+                                          hintText: 'Enter new title',
+                                          hintStyle: TextStyle(color: Colors.grey),
+                                        ),
+                                        onChanged: (value) {
+                                          newTitle = value;
+                                        },
+                                        controller: TextEditingController(text: photoTitle),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('Cancel'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: const Text('Save'),
+                                          onPressed: () {
+                                            setState(() {
+                                              photoTitle = newTitle;
+                                            });
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  Text(
+                                    photoTitle,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Image
+                    Flexible(
+                      child: InteractiveViewer(
+                        panEnabled: true,
+                        minScale: 0.5,
+                        maxScale: 4,
+                        child: isWeb
+                            ? Image.network(imagePath)
+                            : Image.file(File(imagePath)),
+                      ),
+                    ),
+                    // Comment section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          hintText: 'Add a comment...',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          border: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          comment = value;
+                        },
+                      ),
+                    ),
+                    // Footer with timestamp and like button
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Timestamp
+                          Text(
+                            DateTime.now().toString().split('.')[0],
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          // Like button
+                          IconButton(
+                            icon: Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: isLiked ? Colors.red : Colors.white,
+                              size: 28,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                isLiked = !isLiked;
+                              });
+                              // TODO: Implement persistent storage for likes
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          }
         );
       },
     );

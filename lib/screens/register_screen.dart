@@ -106,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       letterSpacing: 2,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
                   Container(
                     decoration: BoxDecoration(
                       gradient: AppColors.inputGradient,
@@ -114,27 +114,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: TextFormField(
                       controller: _usernameController,
+                      style: const TextStyle(color: Colors.brown),
                       decoration: InputDecoration(
-                        labelText: 'Username',
+                        hintText: 'Username',
+                        hintStyle: const TextStyle(
+                          color: Colors.brown,
+                          fontSize: 16,
+                        ),
+                        filled: true,
+                        fillColor: Colors.transparent,
                         border: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a username';
+                          return 'Username is required';
+                        }
+                        if (value.length < 3) {
+                          return 'Username must be at least 3 characters';
                         }
                         return null;
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Container(
                     decoration: BoxDecoration(
                       gradient: AppColors.inputGradient,
@@ -142,27 +147,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: TextFormField(
                       controller: _emailController,
+                      style: const TextStyle(color: Colors.brown),
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        hintText: 'Email',
+                        hintStyle: const TextStyle(
+                          color: Colors.brown,
+                          fontSize: 16,
+                        ),
+                        filled: true,
+                        fillColor: Colors.transparent,
                         border: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return 'Email is required';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Please enter a valid email';
                         }
                         return null;
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Container(
                     decoration: BoxDecoration(
                       gradient: AppColors.inputGradient,
@@ -170,28 +180,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: TextFormField(
                       controller: _passwordController,
+                      style: const TextStyle(color: Colors.brown),
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        hintText: 'Password',
+                        hintStyle: const TextStyle(
+                          color: Colors.brown,
+                          fontSize: 16,
+                        ),
+                        filled: true,
+                        fillColor: Colors.transparent,
                         border: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                       obscureText: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return 'Password is required';
+                        }
+                        if (value.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        if (!value.contains(RegExp(r'[A-Z]'))) {
+                          return 'Password must contain at least one uppercase letter';
+                        }
+                        if (!value.contains(RegExp(r'[0-9]'))) {
+                          return 'Password must contain at least one number';
                         }
                         return null;
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Container(
                     decoration: BoxDecoration(
                       gradient: AppColors.inputGradient,
@@ -199,16 +220,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: TextFormField(
                       controller: _confirmPasswordController,
+                      style: const TextStyle(color: Colors.brown),
                       decoration: InputDecoration(
-                        labelText: 'Confirm Password',
+                        hintText: 'Confirm Password',
+                        hintStyle: const TextStyle(
+                          color: Colors.brown,
+                          fontSize: 16,
+                        ),
+                        filled: true,
+                        fillColor: Colors.transparent,
                         border: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: AppColors.pillShape,
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                       obscureText: true,
@@ -227,30 +250,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   _isLoading
                       ? const CircularProgressIndicator()
                       : Container(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    child: ElevatedButton(
-                      onPressed: _register,
-                      style: AppColors.pillButtonStyle,
-                      child: Ink(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        height: 55,
                         decoration: BoxDecoration(
                           gradient: AppColors.loginGradient,
-                          borderRadius: AppColors.pillShape,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          alignment: Alignment.center,
+                        child: ElevatedButton(
+                          onPressed: _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
                           child: const Text(
                             'Register',
                             style: TextStyle(
-                              color: AppColors.buttonText,
+                              color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);

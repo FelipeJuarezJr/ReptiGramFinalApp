@@ -19,7 +19,7 @@ dependencies:
   flutter_svg: ^2.0.9
   image_picker: ^1.0.7
   firebase_storage: ^11.6.0
-
+  firebase_database: ^10.4.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

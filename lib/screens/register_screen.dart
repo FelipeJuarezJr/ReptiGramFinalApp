@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../styles/colors.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -31,13 +32,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       try {
+        // Check if username is already taken
+        final DatabaseReference usernamesRef = FirebaseDatabase.instance.ref().child('usernames');
+        final DatabaseEvent event = await usernamesRef.child(_usernameController.text.trim()).once();
+        
+        if (event.snapshot.value != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Username is already taken')),
+            );
+          }
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
+
+        // Create user account
         final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
         
-        // Update user profile with username
-        await userCredential.user?.updateDisplayName(_usernameController.text.trim());
+        // Save username in both locations
+        final String uid = userCredential.user!.uid;
+        final DatabaseReference userRef = FirebaseDatabase.instance.ref().child('users').child(uid);
+        
+        // Convert operations to Futures explicitly
+        final Future<void> userDataFuture = userRef.set({
+          'username': _usernameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'createdAt': ServerValue.timestamp,
+        });
+        
+        final Future<void> usernameFuture = usernamesRef
+            .child(_usernameController.text.trim())
+            .set(uid);
+            
+        final Future<void> displayNameFuture = userCredential.user!
+            .updateDisplayName(_usernameController.text.trim());
+
+        // Wait for all operations to complete
+        await Future.wait<void>([
+          userDataFuture,
+          usernameFuture,
+          displayNameFuture,
+        ]);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -55,6 +95,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message)),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}')),
           );
         }
       } finally {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../styles/colors.dart';
 
 class NavDrawer extends StatelessWidget {
   final String? userEmail;
@@ -21,12 +22,7 @@ class NavDrawer extends StatelessWidget {
         children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.blue, Colors.purple],
-              ),
+              gradient: AppColors.mainGradient,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +37,7 @@ class NavDrawer extends StatelessWidget {
                 Text(
                   userName ?? 'User',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.titleText,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -49,7 +45,7 @@ class NavDrawer extends StatelessWidget {
                 Text(
                   userEmail ?? '',
                   style: const TextStyle(
-                    color: Colors.white70,
+                    color: AppColors.titleText,
                     fontSize: 14,
                   ),
                 ),

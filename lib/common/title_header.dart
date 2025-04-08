@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../screens/login_screen.dart';
+import '../widgets/nav_drawer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class TitleHeader extends StatelessWidget {
@@ -8,12 +9,42 @@ class TitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Padding(
       padding: const EdgeInsets.only(top: 16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const SizedBox(width: 48),
+          IconButton(
+            icon: const Icon(
+              Icons.menu,
+              color: AppColors.titleText,
+              size: 28,
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                barrierDismissible: true,
+                builder: (BuildContext context) {
+                  return Dialog(
+                    insetPadding: const EdgeInsets.only(left: 0),
+                    alignment: Alignment.centerLeft,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      child: NavDrawer(
+                        userEmail: user?.email,
+                        userName: user?.displayName,
+                        userPhotoUrl: user?.photoURL,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           const Expanded(
             child: Center(
               child: Text(

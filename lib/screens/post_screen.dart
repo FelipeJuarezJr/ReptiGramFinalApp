@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class PostScreen extends StatefulWidget {
   const PostScreen({super.key});
@@ -33,15 +32,7 @@ class _PostScreenState extends State<PostScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 0.0),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: TitleHeader(),
-                  ),
-                ],
-              ),
+              const TitleHeader(),
               const Header(initialIndex: 0),
               Expanded(
                 child: SingleChildScrollView(

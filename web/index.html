@@ -34,32 +34,36 @@
 
   <!-- Add this meta tag inside the head section -->
   <meta name="google-signin-client_id" content="1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com">
-</head>
-<body>
-  <script src="flutter_bootstrap.js" async></script>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-analytics.js"></script>
 
+  <!-- Initialize Firebase -->
+  <script src="firebase-config.js"></script>
   <script>
-    const firebaseConfig = {
-      apiKey: process.env.FIREBASE_API_KEY,
-      authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-      databaseURL: process.env.FIREBASE_DATABASE_URL,
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.FIREBASE_APP_ID,
-      measurementId: process.env.FIREBASE_MEASUREMENT_ID
-    };
-
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     firebase.analytics();
   </script>
 
+  <script>
+    window.addEventListener('load', function(ev) {
+      _flutter.loader.load({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        }
+      }).then(function(engineInitializer) {
+        return engineInitializer.initializeEngine();
+      }).then(function(appRunner) {
+        return appRunner.runApp();
+      });
+    });
+  </script>
+</head>
+<body>
   <script src="main.dart.js" type="application/javascript"></script>
 </body>
 </html>

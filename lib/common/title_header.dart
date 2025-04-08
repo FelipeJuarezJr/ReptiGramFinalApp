@@ -23,25 +23,38 @@ class TitleHeader extends StatelessWidget {
               size: 28,
             ),
             onPressed: () {
-              showDialog(
-                context: context,
-                barrierDismissible: true,
-                builder: (BuildContext context) {
-                  return Dialog(
-                    insetPadding: const EdgeInsets.only(left: 0),
-                    alignment: Alignment.centerLeft,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.7,
-                      child: NavDrawer(
-                        userEmail: user?.email,
-                        userName: user?.displayName,
-                        userPhotoUrl: user?.photoURL,
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  opaque: false,
+                  barrierDismissible: true,
+                  barrierColor: Colors.black54,
+                  transitionDuration: const Duration(milliseconds: 400),
+                  pageBuilder: (context, animation, secondaryAnimation) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(-1, 0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutSine,
+                      )),
+                      child: Dialog(
+                        insetPadding: const EdgeInsets.only(left: 0),
+                        alignment: Alignment.centerLeft,
+                        backgroundColor: Colors.transparent,
+                        elevation: 0,
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.7,
+                          child: NavDrawer(
+                            userEmail: user?.email,
+                            userName: user?.displayName,
+                            userPhotoUrl: user?.photoURL,
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               );
             },
           ),

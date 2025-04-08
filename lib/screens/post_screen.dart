@@ -4,6 +4,7 @@ import '../common/header.dart';
 import '../screens/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../common/title_header.dart';
+import '../widgets/nav_drawer.dart';
 
 class PostScreen extends StatefulWidget {
   const PostScreen({super.key});
@@ -25,7 +26,18 @@ class _PostScreenState extends State<PostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Create Post'),
+        backgroundColor: Colors.deepPurple,
+      ),
+      drawer: NavDrawer(
+        userEmail: user?.email,
+        userName: user?.displayName,
+        userPhotoUrl: user?.photoURL,
+      ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         decoration: const BoxDecoration(

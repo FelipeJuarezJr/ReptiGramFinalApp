@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../common/header.dart';
-import '../screens/login_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../common/title_header.dart';
-import '../widgets/nav_drawer.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PostScreen extends StatefulWidget {
   const PostScreen({super.key});
@@ -26,18 +24,7 @@ class _PostScreenState extends State<PostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Post'),
-        backgroundColor: Colors.deepPurple,
-      ),
-      drawer: NavDrawer(
-        userEmail: user?.email,
-        userName: user?.displayName,
-        userPhotoUrl: user?.photoURL,
-      ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         decoration: const BoxDecoration(
@@ -46,7 +33,15 @@ class _PostScreenState extends State<PostScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const TitleHeader(),
+              const SizedBox(height: 0.0),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: TitleHeader(),
+                  ),
+                ],
+              ),
               const Header(initialIndex: 0),
               Expanded(
                 child: SingleChildScrollView(
@@ -89,7 +84,7 @@ class _PostScreenState extends State<PostScreen> {
                         const SizedBox(height: 24),
                         _isLoading
                             ? const CircularProgressIndicator()
-                            : Container(
+                            : SizedBox(
                                 width: MediaQuery.of(context).size.width * 0.5,
                                 child: ElevatedButton(
                                   onPressed: () {

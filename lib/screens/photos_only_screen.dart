@@ -21,16 +21,18 @@ class PhotosOnlyScreen extends StatefulWidget {
 }
 
 class PhotoData {
-  final dynamic file; // XFile or File
+  final dynamic file;  // Can be XFile, File, or String (URL)
   final String? firebaseUrl;
   String title;
   bool isLiked;
+  final String? userId;  // Add this to track photo ownership
 
   PhotoData({
     required this.file,
     this.firebaseUrl,
     this.title = 'Photo Details',
     this.isLiked = false,
+    this.userId,
   });
 }
 
@@ -38,6 +40,40 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   final List<PhotoData> photos = [];
   final ImagePicker _picker = ImagePicker();
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPhotos();  // Load photos when screen opens
+  }
+
+  Future<void> _loadPhotos() async {
+    try {
+      // List all files in the photos directory
+      final ListResult result = await _storage.ref().child('photos').listAll();
+      
+      for (var item in result.items) {
+        // Get download URL for each photo
+        final String url = await item.getDownloadURL();
+        
+        setState(() {
+          photos.add(PhotoData(
+            file: url,  // Store URL instead of file
+            firebaseUrl: url,
+            title: 'Photo Details',
+          ));
+        });
+      }
+    } catch (e) {
+      print('Error loading photos: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to load photos'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   Future<String?> _uploadImageToFirebase(XFile pickedFile) async {
     try {
@@ -249,167 +285,85 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   }
 
   Widget _buildPhotoCard(PhotoData photo) {
-    if (kIsWeb) {
-      return InkWell(
-        onTap: () => _showEnlargedImage(photo),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.inputGradient,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.network(
-                  photo.file.path,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
-              ),
-              // Title overlay
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.transparent,
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(15),
-                      topRight: Radius.circular(15),
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    photo.title,  // Use the stored title
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              // Like icon
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    photo.isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: photo.isLiked ? Colors.red : Colors.white,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return InkWell(
+      onTap: () => _showEnlargedImage(photo),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.inputGradient,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
-      );
-    } else {
-      return InkWell(
-        onTap: () => _showEnlargedImage(photo),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.inputGradient,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 5,
-                offset: const Offset(0, 3),
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Image.network(
+                photo.firebaseUrl!,  // Use the Firebase URL
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(15),
-                child: Image.file(
-                  File(photo.file.path),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
-              ),
-              // Title overlay
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.7),
-                        Colors.transparent,
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(15),
-                      topRight: Radius.circular(15),
-                    ),
+            ),
+            // Title overlay
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.transparent,
+                    ],
                   ),
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    photo.title,  // Use the stored title
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
                   ),
                 ),
-              ),
-              // Like icon
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  photo.title,  // Use the stored title
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: Icon(
-                    photo.isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: photo.isLiked ? Colors.red : Colors.white,
-                    size: 20,
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ],
-          ),
+            ),
+            // Like icon
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: photo.isLiked ? Colors.red : Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
   }
 
   void _showEnlargedImage(PhotoData photo) {

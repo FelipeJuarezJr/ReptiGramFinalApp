@@ -31,7 +31,7 @@ class NavDrawer extends StatelessWidget {
                   radius: 30,
                   backgroundImage: userPhotoUrl != null
                       ? NetworkImage(userPhotoUrl!)
-                      : const AssetImage('assets/img/default_profile.png') as ImageProvider,
+                      : const AssetImage('assets/img/reptiGramLogo.png') as ImageProvider,
                 ),
                 const SizedBox(height: 10),
                 Text(

@@ -529,9 +529,10 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                         panEnabled: true,
                         minScale: 0.5,
                         maxScale: 4,
-                        child: kIsWeb
-                            ? Image.network(photo.file.path)
-                            : Image.file(File(photo.file.path)),
+                        child: Image.network(
+                          photo.firebaseUrl!,  // Use the Firebase URL directly
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     // Comment section

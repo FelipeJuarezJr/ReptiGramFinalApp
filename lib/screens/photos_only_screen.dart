@@ -356,6 +356,13 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     bool hasUnsavedChanges = false;
     String originalTitle = photoTitle;
     String originalComment = comment;
+    
+    // Create a TextEditingController
+    final TextEditingController commentController = TextEditingController(text: comment);
+    // Set cursor to end
+    commentController.selection = TextSelection.fromPosition(
+      TextPosition(offset: comment.length)
+    );
 
     showDialog(
       context: context,
@@ -521,22 +528,32 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                     // Comment section
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: TextField(
-                        controller: TextEditingController(text: comment),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          hintText: 'Add a comment...',
-                          hintStyle: TextStyle(color: Colors.grey),
-                          border: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: TextField(
+                          controller: commentController,  // Use the controller
+                          style: const TextStyle(color: Colors.white),
+                          textAlign: TextAlign.left,
+                          keyboardType: TextInputType.multiline,
+                          maxLines: null,
+                          decoration: const InputDecoration(
+                            hintText: 'Add a comment...',
+                            hintStyle: TextStyle(color: Colors.grey),
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 8.0,
+                              horizontal: 12.0,
+                            ),
                           ),
+                          onChanged: (value) {
+                            setState(() {
+                              comment = value;
+                              hasUnsavedChanges = photoTitle != originalTitle || comment != originalComment;
+                            });
+                          },
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            comment = value;
-                            hasUnsavedChanges = photoTitle != originalTitle || comment != originalComment;
-                          });
-                        },
                       ),
                     ),
                     // Footer with timestamp, like button, and save button

@@ -9,6 +9,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
+import '../models/photo_data.dart';
 
 class PhotosOnlyScreen extends StatefulWidget {
   final String notebookName;
@@ -22,38 +25,20 @@ class PhotosOnlyScreen extends StatefulWidget {
   State<PhotosOnlyScreen> createState() => _PhotosOnlyScreenState();
 }
 
-class PhotoData {
-  final String id;
-  final dynamic file;
-  final String? firebaseUrl;
-  String title;
-  bool isLiked;
-  String comment;
-  final String? userId;
-
-  PhotoData({
-    required this.id,
-    required this.file,
-    this.firebaseUrl,
-    this.title = 'Photo Details',
-    this.isLiked = false,
-    this.comment = '',
-    this.userId,
-  });
-}
-
 class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
-  final List<PhotoData> photos = [];
   final ImagePicker _picker = ImagePicker();
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   @override
   void initState() {
     super.initState();
-    _loadPhotos();  // Load photos when screen opens
+    _loadPhotos();
   }
 
   Future<void> _loadPhotos() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    appState.setLoading(true);
+
     try {
       final userId = FirebaseAuth.instance.currentUser!.uid;
       final DatabaseReference userPhotosRef = FirebaseDatabase.instance
@@ -66,24 +51,26 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
       
       if (snapshot.value != null) {
         final Map<dynamic, dynamic> photosMap = snapshot.value as Map;
+        final List<PhotoData> loadedPhotos = [];
         
-        setState(() {
-          photos.clear();
-          photosMap.forEach((key, value) {
-            photos.add(PhotoData(
-              id: key,
-              file: value['firebaseUrl'],
-              firebaseUrl: value['firebaseUrl'],
-              title: value['title'] ?? 'Photo Details',
-              isLiked: value['isLiked'] ?? false,
-              comment: value['comment'] ?? '',  // Load saved comment
-              userId: userId,
-            ));
-          });
+        photosMap.forEach((key, value) {
+          loadedPhotos.add(PhotoData(
+            id: key,
+            file: value['firebaseUrl'],
+            firebaseUrl: value['firebaseUrl'],
+            title: value['title'] ?? 'Photo Details',
+            isLiked: value['isLiked'] ?? false,
+            comment: value['comment'] ?? '',
+            userId: userId,
+          ));
         });
+
+        appState.setPhotos(loadedPhotos);
       }
     } catch (e) {
       print('Error loading photos: $e');
+    } finally {
+      appState.setLoading(false);
     }
   }
 
@@ -147,13 +134,12 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
         Navigator.pop(context);
 
         if (downloadURL != null) {
-          setState(() {
-            photos.add(PhotoData(
-              id: '',
-              file: pickedFile,
-              firebaseUrl: downloadURL,
-            ));
-          });
+          final appState = Provider.of<AppState>(context, listen: false);
+          appState.addPhoto(PhotoData(
+            id: '',
+            file: pickedFile,
+            firebaseUrl: downloadURL,
+          ));
         }
       }
     } catch (e) {
@@ -168,94 +154,100 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        height: MediaQuery.of(context).size.height,
-        decoration: const BoxDecoration(
-          gradient: AppColors.mainGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const TitleHeader(),
-              const Header(initialIndex: 1),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Back button row
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: AppColors.titleText,
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Action Buttons with new layout
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,  // Align to right
+    return Consumer<AppState>(
+      builder: (context, appState, child) {
+        return Scaffold(
+          body: Container(
+            height: MediaQuery.of(context).size.height,
+            decoration: const BoxDecoration(
+              gradient: AppColors.mainGradient,
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const TitleHeader(),
+                  const Header(initialIndex: 1),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
                         children: [
-                          _buildSmallActionButton(
-                            'Add Image',
-                            Icons.add_photo_alternate,
-                            _pickImage,
+                          // Back button row
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: AppColors.titleText,
+                                ),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          // Action Buttons with new layout
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,  // Align to right
+                            children: [
+                              _buildSmallActionButton(
+                                'Add Image',
+                                Icons.add_photo_alternate,
+                                _pickImage,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            widget.notebookName,
+                            style: const TextStyle(
+                              color: AppColors.titleText,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          // Photos Grid
+                          Expanded(
+                            child: appState.isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : appState.photos.isEmpty
+                                    ? const Center(
+                                        child: Text(
+                                          'No photos yet.\nTap "Add Image" to get started!',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: AppColors.titleText,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      )
+                                    : GridView.builder(
+                                        gridDelegate:
+                                            const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          crossAxisSpacing: 16,
+                                          mainAxisSpacing: 16,
+                                        ),
+                                        itemCount: appState.photos.length,
+                                        itemBuilder: (context, index) {
+                                          return _buildPhotoCard(appState.photos[index]);
+                                        },
+                                      ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        widget.notebookName,
-                        style: const TextStyle(
-                          color: AppColors.titleText,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Photos Grid
-                      Expanded(
-                        child: photos.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No photos yet.\nTap "Add Image" to get started!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.titleText,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              )
-                            : GridView.builder(
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                ),
-                                itemCount: photos.length,
-                                itemBuilder: (context, index) {
-                                  return _buildPhotoCard(photos[index]);
-                                },
-                              ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 

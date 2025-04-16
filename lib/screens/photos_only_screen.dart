@@ -352,10 +352,11 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   void _showEnlargedImage(PhotoData photo) {
     String photoTitle = photo.title;
     String comment = photo.comment;
-    bool isLiked = photo.isLiked;
+    bool isLiked = photo.isLiked;  // Get initial like status
     bool hasUnsavedChanges = false;
     String originalTitle = photoTitle;
     String originalComment = comment;
+    bool originalIsLiked = isLiked;  // Store original like status
     
     // Create a TextEditingController
     final TextEditingController commentController = TextEditingController(text: comment);
@@ -580,6 +581,10 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                                 onPressed: () {
                                   setState(() {
                                     isLiked = !isLiked;
+                                    // Update hasUnsavedChanges to include like status
+                                    hasUnsavedChanges = photoTitle != originalTitle || 
+                                                      comment != originalComment ||
+                                                      isLiked != originalIsLiked;
                                   });
                                 },
                               ),
@@ -595,17 +600,16 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                                 ),
                               ),
                               onPressed: () async {
-                                // Update the photo object with new values
                                 photo.title = photoTitle;
                                 photo.isLiked = isLiked;
                                 photo.comment = comment;
                                 
-                                // Save to Firebase
                                 await _savePhotoChanges(photo);
                                 
                                 setState(() {
                                   originalTitle = photoTitle;
                                   originalComment = comment;
+                                  originalIsLiked = isLiked;  // Update original like status
                                   hasUnsavedChanges = false;
                                 });
                                 

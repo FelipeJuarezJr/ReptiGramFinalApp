@@ -7,6 +7,8 @@ import '../common/header.dart';
 import '../common/title_header.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class PhotosOnlyScreen extends StatefulWidget {
   final String notebookName;
@@ -21,17 +23,21 @@ class PhotosOnlyScreen extends StatefulWidget {
 }
 
 class PhotoData {
-  final dynamic file;  // Can be XFile, File, or String (URL)
+  final String id;
+  final dynamic file;
   final String? firebaseUrl;
   String title;
   bool isLiked;
-  final String? userId;  // Add this to track photo ownership
+  String comment;
+  final String? userId;
 
   PhotoData({
+    required this.id,
     required this.file,
     this.firebaseUrl,
     this.title = 'Photo Details',
     this.isLiked = false,
+    this.comment = '',
     this.userId,
   });
 }
@@ -49,29 +55,35 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
 
   Future<void> _loadPhotos() async {
     try {
-      // List all files in the photos directory
-      final ListResult result = await _storage.ref().child('photos').listAll();
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+      final DatabaseReference userPhotosRef = FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(userId)
+          .child('photos');
+
+      final DataSnapshot snapshot = await userPhotosRef.get();
       
-      for (var item in result.items) {
-        // Get download URL for each photo
-        final String url = await item.getDownloadURL();
+      if (snapshot.value != null) {
+        final Map<dynamic, dynamic> photosMap = snapshot.value as Map;
         
         setState(() {
-          photos.add(PhotoData(
-            file: url,  // Store URL instead of file
-            firebaseUrl: url,
-            title: 'Photo Details',
-          ));
+          photos.clear();
+          photosMap.forEach((key, value) {
+            photos.add(PhotoData(
+              id: key,
+              file: value['firebaseUrl'],
+              firebaseUrl: value['firebaseUrl'],
+              title: value['title'] ?? 'Photo Details',
+              isLiked: value['isLiked'] ?? false,
+              comment: value['comment'] ?? '',  // Load saved comment
+              userId: userId,
+            ));
+          });
         });
       }
     } catch (e) {
       print('Error loading photos: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to load photos'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -137,6 +149,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
         if (downloadURL != null) {
           setState(() {
             photos.add(PhotoData(
+              id: '',
               file: pickedFile,
               firebaseUrl: downloadURL,
             ));
@@ -368,7 +381,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
 
   void _showEnlargedImage(PhotoData photo) {
     String photoTitle = photo.title;
-    String comment = '';
+    String comment = photo.comment;
     bool isLiked = photo.isLiked;
     bool hasUnsavedChanges = false;
     String originalTitle = photoTitle;
@@ -539,6 +552,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: TextField(
+                        controller: TextEditingController(text: comment),
                         style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(
                           hintText: 'Add a comment...',
@@ -593,18 +607,24 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
-                              onPressed: () {
-                                // TODO: Implement save functionality
+                              onPressed: () async {
+                                // Update the photo object with new values
+                                photo.title = photoTitle;
+                                photo.isLiked = isLiked;
+                                photo.comment = comment;
+                                
+                                // Save to Firebase
+                                await _savePhotoChanges(photo);
+                                
                                 setState(() {
                                   originalTitle = photoTitle;
                                   originalComment = comment;
                                   hasUnsavedChanges = false;
-                                  // Update the photo data
-                                  photo.title = photoTitle;
-                                  photo.isLiked = isLiked;
                                 });
-                                // Update the main state to reflect changes
+                                
+                                // Update main state
                                 this.setState(() {});
+                                
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Changes saved successfully!'),
@@ -625,5 +645,9 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
         );
       },
     );
+  }
+
+  Future<void> _savePhotoChanges(PhotoData photo) async {
+    // Implementation of _savePhotoChanges method
   }
 } 

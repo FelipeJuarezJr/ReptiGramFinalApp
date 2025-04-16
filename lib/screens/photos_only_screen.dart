@@ -12,6 +12,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../models/photo_data.dart';
+import '../utils/photo_utils.dart';
 
 class PhotosOnlyScreen extends StatefulWidget {
   final String notebookName;
@@ -40,35 +41,12 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     appState.setLoading(true);
 
     try {
-      final userId = FirebaseAuth.instance.currentUser!.uid;
-      final DatabaseReference userPhotosRef = FirebaseDatabase.instance
-          .ref()
-          .child('users')
-          .child(userId)
-          .child('photos');
-
-      final DataSnapshot snapshot = await userPhotosRef.get();
-      
-      if (snapshot.value != null) {
-        final Map<dynamic, dynamic> photosMap = snapshot.value as Map;
-        final List<PhotoData> loadedPhotos = [];
-        
-        photosMap.forEach((key, value) {
-          loadedPhotos.add(PhotoData(
-            id: key,
-            file: value['firebaseUrl'],
-            firebaseUrl: value['firebaseUrl'],
-            title: value['title'] ?? 'Photo Details',
-            isLiked: value['isLiked'] ?? false,
-            comment: value['comment'] ?? '',
-            userId: userId,
-          ));
-        });
-
-        appState.setPhotos(loadedPhotos);
-      }
+      final photos = await PhotoUtils.loadUserPhotos();
+      appState.setPhotos(photos);
     } catch (e) {
-      print('Error loading photos: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading photos: $e')),
+      );
     } finally {
       appState.setLoading(false);
     }
@@ -640,6 +618,12 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   }
 
   Future<void> _savePhotoChanges(PhotoData photo) async {
-    // Implementation of _savePhotoChanges method
+    try {
+      await PhotoUtils.savePhotoChanges(photo);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving changes: $e')),
+      );
+    }
   }
 } 

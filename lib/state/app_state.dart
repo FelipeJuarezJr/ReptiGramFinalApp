@@ -1,20 +1,25 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/photo_data.dart';
 
 class AppState extends ChangeNotifier {
-  User? _currentUser;
   List<PhotoData> _photos = [];
   bool _isLoading = false;
+  String? _error;
 
   // Getters
-  User? get currentUser => _currentUser;
   List<PhotoData> get photos => _photos;
   bool get isLoading => _isLoading;
+  String? get error => _error;
 
-  // Set current user
-  void setUser(User? user) {
-    _currentUser = user;
+  // Set loading state
+  void setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  // Set photos
+  void setPhotos(List<PhotoData> photos) {
+    _photos = photos;
     notifyListeners();
   }
 
@@ -33,23 +38,21 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // Set loading state
-  void setLoading(bool loading) {
-    _isLoading = loading;
+  // Remove photo
+  void removePhoto(String photoId) {
+    _photos.removeWhere((p) => p.id == photoId);
     notifyListeners();
   }
 
-  // Set all photos
-  void setPhotos(List<PhotoData> photos) {
-    _photos = photos;
+  // Set error
+  void setError(String? error) {
+    _error = error;
     notifyListeners();
   }
 
-  // Clear state on logout
-  void clearState() {
-    _currentUser = null;
-    _photos = [];
-    _isLoading = false;
+  // Clear error
+  void clearError() {
+    _error = null;
     notifyListeners();
   }
 } 

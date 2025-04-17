@@ -33,10 +33,15 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPhotos();
+    // Use addPostFrameCallback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPhotos();
+    });
   }
 
   Future<void> _loadPhotos() async {
+    if (!mounted) return;  // Check if widget is still mounted
+    
     final appState = Provider.of<AppState>(context, listen: false);
     appState.setLoading(true);
 
@@ -44,11 +49,13 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
       final photos = await PhotoUtils.loadUserPhotos();
       appState.setPhotos(photos);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading photos: $e')),
-      );
+      if (mounted) {  // Check again before showing error
+        appState.setError(e.toString());
+      }
     } finally {
-      appState.setLoading(false);
+      if (mounted) {  // Check again before updating loading state
+        appState.setLoading(false);
+      }
     }
   }
 

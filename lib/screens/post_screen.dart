@@ -5,6 +5,7 @@ import '../common/title_header.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/post_model.dart';
+import '../models/comment_model.dart';
 
 class PostScreen extends StatefulWidget {
   const PostScreen({super.key});
@@ -81,6 +82,131 @@ class _PostScreenState extends State<PostScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _toggleLike(PostModel post) async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      setState(() {
+        post.isLiked = !post.isLiked;
+        post.likeCount += post.isLiked ? 1 : -1;
+      });
+
+      // TODO: Update Firebase when ready
+      // final postRef = FirebaseDatabase.instance
+      //     .ref()
+      //     .child('posts')
+      //     .child(post.id);
+      // await postRef.update({
+      //   'isLiked': post.isLiked,
+      //   'likeCount': post.likeCount,
+      // });
+
+    } catch (e) {
+      print('Error toggling like: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update like: ${e.toString()}')),
+      );
+    }
+  }
+
+  void _showCommentDialog(PostModel post) {
+    final commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppColors.pillShape,
+        ),
+        title: const Text(
+          'Add Comment',
+          style: TextStyle(color: Colors.brown),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: commentController,
+              decoration: InputDecoration(
+                hintText: 'Write a comment...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                border: OutlineInputBorder(
+                  borderRadius: AppColors.pillShape,
+                ),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            // Show existing comments
+            if (post.comments.isNotEmpty) ...[
+              const Text(
+                'Comments:',
+                style: TextStyle(
+                  color: Colors.brown,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: post.comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = post.comments[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text(
+                        comment.content,
+                        style: const TextStyle(color: Colors.brown),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (commentController.text.trim().isNotEmpty) {
+                _addComment(post, commentController.text.trim());
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.brown,
+            ),
+            child: const Text('Comment'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addComment(PostModel post, String content) {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+    final newComment = CommentModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: userId,
+      content: content,
+      timestamp: DateTime.now(),
+    );
+
+    setState(() {
+      post.comments.add(newComment);
+    });
+
+    // TODO: Add Firebase integration when ready
   }
 
   @override
@@ -199,13 +325,67 @@ class _PostScreenState extends State<PostScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              _formatTimestamp(post.timestamp),
-                              style: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 12,
-                              ),
+                            Row(
+                              children: [
+                                // Like button
+                                IconButton(
+                                  icon: Icon(
+                                    post.isLiked ? Icons.favorite : Icons.favorite_border,
+                                    color: post.isLiked ? Colors.red : Colors.grey[400],
+                                  ),
+                                  onPressed: () => _toggleLike(post),
+                                ),
+                                Text(
+                                  '${post.likeCount} likes',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // Comment button
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.comment_outlined,
+                                    color: Colors.grey[400],
+                                  ),
+                                  onPressed: () => _showCommentDialog(post),
+                                ),
+                                Text(
+                                  '${post.comments.length} comments',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  _formatTimestamp(post.timestamp),
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
+                            // Show latest comment if exists
+                            if (post.comments.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.brown.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Latest: ${post.comments.last.content}',
+                                  style: const TextStyle(
+                                    color: Colors.brown,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

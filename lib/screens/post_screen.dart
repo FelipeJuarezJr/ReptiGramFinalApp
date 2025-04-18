@@ -85,9 +85,8 @@ class _PostScreenState extends State<PostScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Get screen width for consistent sizing
     final screenWidth = MediaQuery.of(context).size.width;
-    final postWidth = screenWidth - 32; // 16px padding on each side
+    final postWidth = screenWidth - 32;
 
     return Scaffold(
       body: Container(
@@ -100,123 +99,118 @@ class _PostScreenState extends State<PostScreen> {
             children: [
               const TitleHeader(),
               const Header(initialIndex: 0),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
+              
+              // Fixed Post Creation Form
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     children: [
-                      // Post Creation Form
-                      Form(
-                        key: _formKey,
-                        child: Column(
-                          children: [
-                            Container(
-                              width: postWidth, // Set consistent width
-                              decoration: BoxDecoration(
-                                gradient: AppColors.inputGradient,
-                                borderRadius: AppColors.pillShape,
-                              ),
-                              child: TextFormField(
-                                controller: _descriptionController,
-                                maxLines: 5,
-                                decoration: InputDecoration(
-                                  hintText: 'What\'s happening in the ReptiWorld?',
-                                  hintStyle: TextStyle(
-                                    color: Colors.grey[600],
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: AppColors.pillShape,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: AppColors.pillShape,
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: AppColors.pillShape,
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter a Post';
-                                  }
-                                  return null;
-                                },
-                              ),
+                      Container(
+                        width: postWidth,
+                        decoration: BoxDecoration(
+                          gradient: AppColors.inputGradient,
+                          borderRadius: AppColors.pillShape,
+                        ),
+                        child: TextFormField(
+                          controller: _descriptionController,
+                          maxLines: 5,
+                          decoration: InputDecoration(
+                            hintText: 'What\'s happening in the ReptiWorld?',
+                            hintStyle: TextStyle(
+                              color: Colors.grey[600],
                             ),
-                            const SizedBox(height: 16),
-                            _isLoading
-                                ? const CircularProgressIndicator()
-                                : SizedBox(
-                                    width: MediaQuery.of(context).size.width * 0.5,
-                                    child: ElevatedButton(
-                                      onPressed: _createPost,
-                                      style: AppColors.pillButtonStyle,
-                                      child: Ink(
-                                        decoration: BoxDecoration(
-                                          gradient: AppColors.loginGradient,
-                                          borderRadius: AppColors.pillShape,
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(vertical: 16),
-                                          alignment: Alignment.center,
-                                          child: const Text(
-                                            'Create Post',
-                                            style: TextStyle(
-                                              color: AppColors.buttonText,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
+                            border: OutlineInputBorder(
+                              borderRadius: AppColors.pillShape,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppColors.pillShape,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: AppColors.pillShape,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter a Post';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _isLoading
+                          ? const CircularProgressIndicator()
+                          : SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.5,
+                              child: ElevatedButton(
+                                onPressed: _createPost,
+                                style: AppColors.pillButtonStyle,
+                                child: Ink(
+                                  decoration: BoxDecoration(
+                                    gradient: AppColors.loginGradient,
+                                    borderRadius: AppColors.pillShape,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      'Create Post',
+                                      style: TextStyle(
+                                        color: AppColors.buttonText,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
+                                ),
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Scrollable Posts List
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: _posts.length,
+                  itemBuilder: (context, index) {
+                    final post = _posts[index];
+                    return Container(
+                      width: postWidth,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.inputGradient,
+                        borderRadius: AppColors.pillShape,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              post.content,
+                              style: const TextStyle(
+                                color: Colors.brown,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _formatTimestamp(post.timestamp),
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-
-                      // Posts List
-                      const SizedBox(height: 24),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _posts.length,
-                        itemBuilder: (context, index) {
-                          final post = _posts[index];
-                          return Container(
-                            width: postWidth, // Set consistent width
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.inputGradient,
-                              borderRadius: AppColors.pillShape,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    post.content,
-                                    style: const TextStyle(
-                                      color: Colors.brown,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _formatTimestamp(post.timestamp),
-                                    style: TextStyle(
-                                      color: Colors.grey[400],
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ],

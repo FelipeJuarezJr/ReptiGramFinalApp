@@ -59,37 +59,92 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     }
   }
 
-  Future<String?> _uploadImageToFirebase(XFile pickedFile) async {
+  Future<void> _uploadImageToFirebase(XFile pickedFile) async {
     try {
-      // Create a unique file name
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(pickedFile.path)}';
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception('No user logged in');
+
+      // Simplify the file name
+      final String photoId = DateTime.now().millisecondsSinceEpoch.toString();
       
-      // Create a reference to the file location
-      final Reference ref = _storage.ref().child('photos/$fileName');
+      // Simplify storage path
+      final Reference ref = _storage
+          .ref()
+          .child('photos')
+          .child(photoId);
       
-      // Upload the file
+      print('Uploading to path: photos/$photoId');
+
       if (kIsWeb) {
-        // For web, we need to upload bytes
         final bytes = await pickedFile.readAsBytes();
-        await ref.putData(bytes);
+        await ref.putData(
+          bytes,
+          SettableMetadata(
+            contentType: 'image/jpeg',
+            customMetadata: {
+              'userId': userId,
+              'uploadedAt': DateTime.now().toString(),
+            },
+          ),
+        );
       } else {
-        // For mobile, we can upload the file directly
-        await ref.putFile(File(pickedFile.path));
+        await ref.putFile(
+          File(pickedFile.path),
+          SettableMetadata(
+            contentType: 'image/jpeg',
+            customMetadata: {
+              'userId': userId,
+              'uploadedAt': DateTime.now().toString(),
+            },
+          ),
+        );
       }
-      
-      // Get the download URL
+
       final String downloadURL = await ref.getDownloadURL();
-      return downloadURL;
       
+      // Create new PhotoData with the ID
+      final PhotoData newPhoto = PhotoData(
+        id: photoId,
+        file: pickedFile,
+        firebaseUrl: downloadURL,
+        title: 'Photo Details',
+        isLiked: false,
+        comment: '',
+        userId: userId,
+      );
+
+      // Save to Realtime Database
+      final DatabaseReference photoRef = FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(userId)
+          .child('photos')
+          .child(photoId);
+
+      await photoRef.set({
+        'firebaseUrl': downloadURL,
+        'title': newPhoto.title,
+        'isLiked': newPhoto.isLiked,
+        'comment': newPhoto.comment,
+        'timestamp': ServerValue.timestamp,
+      });
+
+      // Update app state
+      if (mounted) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.addPhoto(newPhoto);
+      }
+
     } catch (e) {
       print('Error uploading image: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to upload image'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return null;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -113,19 +168,10 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
         );
 
         // Upload to Firebase
-        final String? downloadURL = await _uploadImageToFirebase(pickedFile);
+        await _uploadImageToFirebase(pickedFile);
         
         // Hide loading indicator
         Navigator.pop(context);
-
-        if (downloadURL != null) {
-          final appState = Provider.of<AppState>(context, listen: false);
-          appState.addPhoto(PhotoData(
-            id: '',
-            file: pickedFile,
-            firebaseUrl: downloadURL,
-          ));
-        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -357,6 +403,20 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
   }
 
   void _showEnlargedImage(PhotoData photo) {
+    // Debug print
+    print('Opening photo with ID: ${photo.id}');
+    
+    if (photo.id.isEmpty) {
+      print('Error: Photo ID is empty');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid photo ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     String photoTitle = photo.title;
     String comment = photo.comment;
     bool isLiked = photo.isLiked;  // Get initial like status
@@ -647,11 +707,57 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
 
   Future<void> _savePhotoChanges(PhotoData photo) async {
     try {
-      await PhotoUtils.savePhotoChanges(photo);
+      // Validate user ID
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('No user logged in');
+      }
+
+      // Validate photo ID
+      if (photo.id.isEmpty) {
+        throw Exception('Photo ID cannot be empty');
+      }
+
+      // Debug prints
+      print('Saving photo:');
+      print('Photo ID: ${photo.id}');
+      print('User ID: $userId');
+      print('Title: ${photo.title}');
+      print('Comment: ${photo.comment}');
+
+      final DatabaseReference photoRef = FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(userId)
+          .child('photos')
+          .child(photo.id);
+
+      final updates = {
+        'title': photo.title.trim(),
+        'comment': photo.comment.trim(),
+        'isLiked': photo.isLiked,
+        'lastModified': ServerValue.timestamp,
+      };
+
+      await photoRef.update(updates);
+
+      // Update app state
+      if (mounted) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.updatePhoto(photo);
+      }
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving changes: $e')),
-      );
+      print('Error saving photo changes: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save changes: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      rethrow;  // Rethrow to handle in calling code
     }
   }
 } 

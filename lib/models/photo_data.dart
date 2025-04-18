@@ -15,5 +15,5 @@ class PhotoData {
     this.isLiked = false,
     this.comment = '',
     this.userId,
-  });
+  }) : assert(id.isNotEmpty, 'Photo ID cannot be empty');
 } 

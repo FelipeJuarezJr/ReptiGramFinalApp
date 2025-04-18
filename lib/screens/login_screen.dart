@@ -63,46 +63,41 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-      
-      try {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+  Future<void> _handleLogin() async {
+    try {
+      setState(() => _isLoading = true);
+
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (mounted) {
+        // Navigate to post screen and trigger post loading
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostScreen(shouldLoadPosts: true),
+          ),
         );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login successful!')),
-          );
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PostScreen(),
-            ),
-          );
-        }
-      } on FirebaseAuthException catch (e) {
-        String message = 'An error occurred';
+      }
+    } catch (e) {
+      String message = 'An error occurred';
+      if (e is FirebaseAuthException) {
         if (e.code == 'user-not-found') {
           message = 'No user found for that email.';
         } else if (e.code == 'wrong-password') {
           message = 'Wrong password provided.';
         }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -199,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             : Container(
                                 width: MediaQuery.of(context).size.width * 0.5,
                                 child: ElevatedButton(
-                                  onPressed: _login,
+                                  onPressed: _handleLogin,
                                   style: AppColors.pillButtonStyle,
                                   child: Ink(
                                     decoration: BoxDecoration(

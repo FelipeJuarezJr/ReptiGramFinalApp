@@ -8,7 +8,12 @@ import '../models/post_model.dart';
 import '../models/comment_model.dart';
 
 class PostScreen extends StatefulWidget {
-  const PostScreen({super.key});
+  final bool shouldLoadPosts;
+  
+  const PostScreen({
+    super.key,
+    this.shouldLoadPosts = false,
+  });
 
   @override
   State<PostScreen> createState() => _PostScreenState();
@@ -23,56 +28,119 @@ class _PostScreenState extends State<PostScreen> {
   @override
   void initState() {
     super.initState();
-    _loadInitialPosts();
+    if (widget.shouldLoadPosts) {
+      // Load posts when coming from login
+      _loadPosts();
+    }
   }
 
-  void _loadInitialPosts() {
-    // Sample initial posts
-    final samplePosts = [
-      PostModel(
-        id: "6",
-        userId: "user1",
-        content: "Just tried the new ramen place downtown 🍜 The broth was absolutely incredible!",
-        timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
-      ),
-      PostModel(
-        id: "5",
-        userId: "user2",
-        content: "Finally finished reading 'The Midnight Library' 📚 What a beautiful story!",
-        timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-      ),
-      // Add more sample posts as needed
-    ];
+  Future<void> _loadPosts() async {
+    try {
+      setState(() => _isLoading = true);
 
-    setState(() {
-      _posts.addAll(samplePosts);
-    });
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      // Reference to posts node and order by timestamp (newest first)
+      final postsRef = FirebaseDatabase.instance
+          .ref()
+          .child('posts')
+          .orderByChild('timestamp');
+
+      final snapshot = await postsRef.get();
+
+      setState(() {
+        _posts.clear();
+        if (snapshot.value != null) {
+          final data = snapshot.value as Map<dynamic, dynamic>;
+          data.forEach((key, value) {
+            // Check if the post has likes
+            Map<dynamic, dynamic> likesMap = {};
+            if (value['likes'] != null) {
+              likesMap = value['likes'] as Map<dynamic, dynamic>;
+            }
+            final isLiked = likesMap.containsKey(userId);
+            final likeCount = likesMap.length;
+
+            // Parse comments
+            final List<CommentModel> comments = [];
+            if (value['comments'] != null) {
+              (value['comments'] as Map<dynamic, dynamic>).forEach((commentKey, commentValue) {
+                comments.add(CommentModel(
+                  id: commentKey,
+                  userId: commentValue['userId'] ?? '',
+                  content: commentValue['content'] ?? '',
+                  timestamp: DateTime.fromMillisecondsSinceEpoch(
+                    commentValue['timestamp'] is int 
+                        ? commentValue['timestamp'] 
+                        : int.parse(commentValue['timestamp'].toString())
+                  ),
+                ));
+              });
+            }
+
+            // Create post model
+            final post = PostModel(
+              id: key,
+              userId: value['userId'] ?? '',
+              content: value['content'] ?? '',
+              timestamp: DateTime.fromMillisecondsSinceEpoch(
+                value['timestamp'] is int 
+                    ? value['timestamp'] 
+                    : int.parse(value['timestamp'].toString())
+              ),
+              isLiked: isLiked,
+              likeCount: likeCount,
+              comments: comments,
+            );
+            _posts.add(post);
+          });
+
+          // Sort posts by timestamp (newest first)
+          _posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        }
+      });
+
+    } catch (e) {
+      print('Error loading posts: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load posts: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _createPost() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final content = _descriptionController.text.trim();
-    if (content.isEmpty) return;
-
-    setState(() => _isLoading = true);
-
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
-      final newPost = PostModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: userId,
-        content: content,
-        timestamp: DateTime.now(),
-      );
+      setState(() => _isLoading = true);
 
-      // Add to local list first (optimistic update)
-      setState(() {
-        _posts.insert(0, newPost);
-        _descriptionController.clear();
-      });
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
 
-      // TODO: Add Firebase integration here when ready
+      final content = _descriptionController.text.trim();
+      final postId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      // Create post data
+      final postData = {
+        'userId': userId,
+        'content': content,
+        'timestamp': ServerValue.timestamp,
+        'likes': {},
+        'comments': {},
+      };
+
+      // Save to Firebase
+      await FirebaseDatabase.instance
+          .ref()
+          .child('posts')
+          .child(postId)
+          .set(postData);
+
+      _descriptionController.clear();
+      await _loadPosts(); // Reload posts
 
     } catch (e) {
       print('Error creating post: $e');
@@ -89,22 +157,31 @@ class _PostScreenState extends State<PostScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
 
+      final postRef = FirebaseDatabase.instance
+          .ref()
+          .child('posts')
+          .child(post.id)
+          .child('likes')
+          .child(userId);
+
+      // Optimistic update
       setState(() {
         post.isLiked = !post.isLiked;
         post.likeCount += post.isLiked ? 1 : -1;
       });
 
-      // TODO: Update Firebase when ready
-      // final postRef = FirebaseDatabase.instance
-      //     .ref()
-      //     .child('posts')
-      //     .child(post.id);
-      // await postRef.update({
-      //   'isLiked': post.isLiked,
-      //   'likeCount': post.likeCount,
-      // });
+      if (post.isLiked) {
+        await postRef.set(true);
+      } else {
+        await postRef.remove();
+      }
 
     } catch (e) {
+      // Revert on error
+      setState(() {
+        post.isLiked = !post.isLiked;
+        post.likeCount += post.isLiked ? 1 : -1;
+      });
       print('Error toggling like: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to update like: ${e.toString()}')),
@@ -193,20 +270,45 @@ class _PostScreenState extends State<PostScreen> {
     );
   }
 
-  void _addComment(PostModel post, String content) {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
-    final newComment = CommentModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: userId,
-      content: content,
-      timestamp: DateTime.now(),
-    );
+  Future<void> _addComment(PostModel post, String content) async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
 
-    setState(() {
-      post.comments.add(newComment);
-    });
+      final commentId = DateTime.now().millisecondsSinceEpoch.toString();
+      final commentData = {
+        'userId': userId,
+        'content': content,
+        'timestamp': ServerValue.timestamp,
+      };
 
-    // TODO: Add Firebase integration when ready
+      // Add comment to Firebase
+      await FirebaseDatabase.instance
+          .ref()
+          .child('posts')
+          .child(post.id)
+          .child('comments')
+          .child(commentId)
+          .set(commentData);
+
+      // Optimistic update
+      final newComment = CommentModel(
+        id: commentId,
+        userId: userId,
+        content: content,
+        timestamp: DateTime.now(),
+      );
+
+      setState(() {
+        post.comments.add(newComment);
+      });
+
+    } catch (e) {
+      print('Error adding comment: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add comment: ${e.toString()}')),
+      );
+    }
   }
 
   @override

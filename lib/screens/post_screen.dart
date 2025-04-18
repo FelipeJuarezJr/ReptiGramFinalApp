@@ -482,14 +482,14 @@ class _PostScreenState extends State<PostScreen> {
                                 IconButton(
                                   icon: Icon(
                                     post.isLiked ? Icons.favorite : Icons.favorite_border,
-                                    color: post.isLiked ? Colors.red : Colors.grey[400],
+                                    color: post.isLiked ? Colors.red : Colors.brown[400],
                                   ),
                                   onPressed: () => _toggleLike(post),
                                 ),
                                 Text(
                                   '${post.likeCount} likes',
                                   style: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: Colors.brown[400],
                                     fontSize: 14,
                                   ),
                                 ),
@@ -497,14 +497,14 @@ class _PostScreenState extends State<PostScreen> {
                                 IconButton(
                                   icon: Icon(
                                     Icons.comment_outlined,
-                                    color: Colors.grey[400],
+                                    color: Colors.brown[400],
                                   ),
                                   onPressed: () => _showCommentDialog(post),
                                 ),
                                 Text(
                                   '${post.comments.length} comments',
                                   style: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: Colors.brown[400],
                                     fontSize: 14,
                                   ),
                                 ),
@@ -512,7 +512,7 @@ class _PostScreenState extends State<PostScreen> {
                                 Text(
                                   _formatTimestamp(post.timestamp),
                                   style: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: Colors.brown[400],
                                     fontSize: 12,
                                   ),
                                 ),

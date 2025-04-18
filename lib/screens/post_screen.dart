@@ -85,6 +85,10 @@ class _PostScreenState extends State<PostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width for consistent sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+    final postWidth = screenWidth - 32; // 16px padding on each side
+
     return Scaffold(
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -107,6 +111,7 @@ class _PostScreenState extends State<PostScreen> {
                         child: Column(
                           children: [
                             Container(
+                              width: postWidth, // Set consistent width
                               decoration: BoxDecoration(
                                 gradient: AppColors.inputGradient,
                                 borderRadius: AppColors.pillShape,
@@ -171,36 +176,45 @@ class _PostScreenState extends State<PostScreen> {
 
                       // Posts List
                       const SizedBox(height: 24),
-                      ..._posts.map((post) => Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.inputGradient,
-                          borderRadius: AppColors.pillShape,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                post.content,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                ),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _posts.length,
+                        itemBuilder: (context, index) {
+                          final post = _posts[index];
+                          return Container(
+                            width: postWidth, // Set consistent width
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.inputGradient,
+                              borderRadius: AppColors.pillShape,
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    post.content,
+                                    style: const TextStyle(
+                                      color: Colors.brown,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _formatTimestamp(post.timestamp),
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _formatTimestamp(post.timestamp),
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )).toList(),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

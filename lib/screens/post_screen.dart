@@ -24,6 +24,7 @@ class _PostScreenState extends State<PostScreen> {
   final _descriptionController = TextEditingController();
   final List<PostModel> _posts = [];
   bool _isLoading = false;
+  final Map<String, String> _usernames = {};
 
   @override
   void initState() {
@@ -41,7 +42,6 @@ class _PostScreenState extends State<PostScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
 
-      // Reference to posts node and order by timestamp (newest first)
       final postsRef = FirebaseDatabase.instance
           .ref()
           .child('posts')
@@ -49,58 +49,68 @@ class _PostScreenState extends State<PostScreen> {
 
       final snapshot = await postsRef.get();
 
-      setState(() {
-        _posts.clear();
-        if (snapshot.value != null) {
-          final data = snapshot.value as Map<dynamic, dynamic>;
-          data.forEach((key, value) {
-            // Check if the post has likes
-            Map<dynamic, dynamic> likesMap = {};
-            if (value['likes'] != null) {
-              likesMap = value['likes'] as Map<dynamic, dynamic>;
-            }
-            final isLiked = likesMap.containsKey(userId);
-            final likeCount = likesMap.length;
+      if (snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final List<PostModel> loadedPosts = [];
 
-            // Parse comments
-            final List<CommentModel> comments = [];
-            if (value['comments'] != null) {
-              (value['comments'] as Map<dynamic, dynamic>).forEach((commentKey, commentValue) {
-                comments.add(CommentModel(
-                  id: commentKey,
-                  userId: commentValue['userId'] ?? '',
-                  content: commentValue['content'] ?? '',
-                  timestamp: DateTime.fromMillisecondsSinceEpoch(
-                    commentValue['timestamp'] is int 
-                        ? commentValue['timestamp'] 
-                        : int.parse(commentValue['timestamp'].toString())
-                  ),
-                ));
-              });
-            }
-
-            // Create post model
-            final post = PostModel(
-              id: key,
-              userId: value['userId'] ?? '',
-              content: value['content'] ?? '',
-              timestamp: DateTime.fromMillisecondsSinceEpoch(
-                value['timestamp'] is int 
-                    ? value['timestamp'] 
-                    : int.parse(value['timestamp'].toString())
-              ),
-              isLiked: isLiked,
-              likeCount: likeCount,
-              comments: comments,
-            );
-            _posts.add(post);
-          });
-
-          // Sort posts by timestamp (newest first)
-          _posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        // Fetch usernames for all posts
+        for (var entry in data.entries) {
+          final postUserId = entry.value['userId'] as String?;
+          if (postUserId != null) {
+            await _fetchUsername(postUserId);
+          }
         }
-      });
 
+        // Process posts
+        data.forEach((key, value) {
+          // Check if the post has likes
+          Map<dynamic, dynamic> likesMap = {};
+          if (value['likes'] != null) {
+            likesMap = value['likes'] as Map<dynamic, dynamic>;
+          }
+          final isLiked = likesMap.containsKey(userId);
+          final likeCount = likesMap.length;
+
+          // Parse comments
+          final List<CommentModel> comments = [];
+          if (value['comments'] != null) {
+            (value['comments'] as Map<dynamic, dynamic>).forEach((commentKey, commentValue) {
+              comments.add(CommentModel(
+                id: commentKey,
+                userId: commentValue['userId'] ?? '',
+                content: commentValue['content'] ?? '',
+                timestamp: DateTime.fromMillisecondsSinceEpoch(
+                  commentValue['timestamp'] is int 
+                      ? commentValue['timestamp'] 
+                      : int.parse(commentValue['timestamp'].toString())
+                ),
+              ));
+            });
+          }
+
+          // Create post model
+          final post = PostModel(
+            id: key,
+            userId: value['userId'] ?? '',
+            content: value['content'] ?? '',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(
+              value['timestamp'] is int 
+                  ? value['timestamp'] 
+                  : int.parse(value['timestamp'].toString())
+            ),
+            isLiked: isLiked,
+            likeCount: likeCount,
+            comments: comments,
+          );
+          loadedPosts.add(post);
+        });
+
+        setState(() {
+          _posts.clear();
+          _posts.addAll(loadedPosts);
+          _posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        });
+      }
     } catch (e) {
       print('Error loading posts: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -311,6 +321,27 @@ class _PostScreenState extends State<PostScreen> {
     }
   }
 
+  Future<void> _fetchUsername(String userId) async {
+    if (_usernames.containsKey(userId)) return;
+
+    try {
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(userId)
+          .child('username')
+          .get();
+
+      if (snapshot.value != null) {
+        setState(() {
+          _usernames[userId] = snapshot.value.toString();
+        });
+      }
+    } catch (e) {
+      print('Error fetching username: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -419,6 +450,25 @@ class _PostScreenState extends State<PostScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.account_circle,
+                                  color: Colors.brown,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _usernames[post.userId] ?? 'Loading...',
+                                  style: const TextStyle(
+                                    color: Colors.brown,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
                             Text(
                               post.content,
                               style: const TextStyle(
@@ -429,7 +479,6 @@ class _PostScreenState extends State<PostScreen> {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                // Like button
                                 IconButton(
                                   icon: Icon(
                                     post.isLiked ? Icons.favorite : Icons.favorite_border,
@@ -445,7 +494,6 @@ class _PostScreenState extends State<PostScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 16),
-                                // Comment button
                                 IconButton(
                                   icon: Icon(
                                     Icons.comment_outlined,

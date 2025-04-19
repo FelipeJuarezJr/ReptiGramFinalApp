@@ -412,12 +412,17 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
       });
 
       _commentController.clear();
-      // Scroll to top to see the new comment
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      
+      // Scroll to bottom to see new comment at the end
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -519,7 +524,8 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
                         );
                       }).toList();
 
-                      comments.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+                      // Sort by timestamp ascending (oldest first)
+                      comments.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
                       return ListView.builder(
                         controller: _scrollController,

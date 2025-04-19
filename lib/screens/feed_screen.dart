@@ -77,6 +77,128 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
+  Widget _buildGridItem(PhotoData photo) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    return Card(
+      color: Colors.white.withOpacity(0.9),
+      child: InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => Dialog(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (photo.firebaseUrl != null)
+                    Image.network(
+                      photo.firebaseUrl!,
+                      fit: BoxFit.cover,
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          photo.title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (photo.comment.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(photo.comment),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Username at the top
+            Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: FutureBuilder<String?>(
+                future: appState.fetchUsername(photo.userId ?? ''),
+                builder: (context, snapshot) {
+                  return Text(
+                    snapshot.data ?? 'Loading...',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                },
+              ),
+            ),
+            // Image
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (photo.firebaseUrl != null)
+                    Image.network(
+                      photo.firebaseUrl!,
+                      fit: BoxFit.cover,
+                    )
+                  else
+                    const Center(
+                      child: Icon(Icons.image),
+                    ),
+                  // Like button overlay
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          photo.isLiked = !photo.isLiked;
+                        });
+                        // TODO: Update like status in database
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: photo.isLiked ? Colors.red : Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Comment preview at the bottom
+            if (photo.comment.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Text(
+                  photo.comment,
+                  style: const TextStyle(fontSize: 10),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,63 +233,10 @@ class _FeedScreenState extends State<FeedScreen> {
                                 crossAxisCount: 3,
                                 crossAxisSpacing: 8.0,
                                 mainAxisSpacing: 8.0,
-                                childAspectRatio: 1.0, // Square images
+                                childAspectRatio: 0.8, // Slightly taller for username and comment
                               ),
                               itemCount: _photos.length,
-                              itemBuilder: (context, index) {
-                                final photo = _photos[index];
-                                return Card(
-                                  color: Colors.white.withOpacity(0.9),
-                                  child: InkWell(
-                                    onTap: () {
-                                      // Show full photo details in a dialog
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => Dialog(
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              if (photo.firebaseUrl != null)
-                                                Image.network(
-                                                  photo.firebaseUrl!,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              Padding(
-                                                padding: const EdgeInsets.all(16.0),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      photo.title,
-                                                      style: const TextStyle(
-                                                        fontSize: 18,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    if (photo.comment.isNotEmpty)
-                                                      Padding(
-                                                        padding: const EdgeInsets.only(top: 8.0),
-                                                        child: Text(photo.comment),
-                                                      ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: photo.firebaseUrl != null
-                                        ? Image.network(
-                                            photo.firebaseUrl!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : const Center(
-                                            child: Icon(Icons.image),
-                                          ),
-                                  ),
-                                );
-                              },
+                              itemBuilder: (context, index) => _buildGridItem(_photos[index]),
                             ),
                           ),
               ),

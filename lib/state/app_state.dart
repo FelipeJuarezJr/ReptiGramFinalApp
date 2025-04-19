@@ -38,8 +38,16 @@ class AppState extends ChangeNotifier {
   }
 
   // Username management
-  Future<void> fetchUsername(String userId) async {
-    if (_usernames.containsKey(userId)) return;
+  Future<String?> fetchUsername(String? userId) async {
+    // Return early if userId is null or empty
+    if (userId == null || userId.isEmpty) {
+      return 'Unknown User';
+    }
+
+    // Return cached username if available
+    if (_usernames.containsKey(userId)) {
+      return _usernames[userId];
+    }
 
     try {
       final snapshot = await FirebaseDatabase.instance
@@ -49,13 +57,15 @@ class AppState extends ChangeNotifier {
           .child('username')
           .get();
 
-      if (snapshot.value != null) {
+      if (snapshot.exists && snapshot.value != null) {
         _usernames[userId] = snapshot.value.toString();
         notifyListeners();
+        return _usernames[userId];
       }
+      return 'Unknown User';
     } catch (e) {
       print('Error fetching username: $e');
-      setError('Error fetching username: $e');
+      return 'Unknown User';
     }
   }
 

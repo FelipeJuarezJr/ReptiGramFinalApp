@@ -7,6 +7,7 @@ class PhotoData {
   String comment;
   final String? userId;
   final int? timestamp;
+  int likesCount;
 
   PhotoData({
     required this.id,
@@ -17,5 +18,6 @@ class PhotoData {
     this.comment = '',
     this.userId,
     this.timestamp,
+    this.likesCount = 0,
   }) : assert(id.isNotEmpty, 'Photo ID cannot be empty');
 } 

@@ -22,7 +22,15 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAllPhotos();
+    _initializeAndLoad();
+  }
+
+  Future<void> _initializeAndLoad() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.initializeUser();  // Initialize user first
+    if (mounted) {
+      _loadAllPhotos();
+    }
   }
 
   Future<void> _loadAllPhotos() async {
@@ -48,7 +56,7 @@ class _FeedScreenState extends State<FeedScreen> {
         if (userData['photos'] != null) {
           final photos = userData['photos'] as Map<dynamic, dynamic>;
           photos.forEach((photoId, photoData) {
-            // Get likes count
+            // Get likes count and current user's like status
             final likes = (photoData['likes'] as Map<dynamic, dynamic>?) ?? {};
             final isLiked = currentUser != null && likes[currentUser.uid] == true;
 
@@ -61,7 +69,7 @@ class _FeedScreenState extends State<FeedScreen> {
               isLiked: isLiked,
               userId: userId,
               timestamp: photoData['timestamp'],
-              likesCount: likes.length,
+              likesCount: likes.length,  // Set the likes count
             );
             allPhotos.add(photo);
           });
@@ -86,8 +94,20 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<void> _toggleLike(PhotoData photo, StateSetter? fullScreenSetState) async {
-    final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
-    if (currentUser == null) return;
+    final appState = Provider.of<AppState>(context, listen: false);
+    final currentUser = appState.currentUser;
+    
+    print('Current user: ${currentUser?.uid}');
+    
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please log in to like photos'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     try {
       final photoRef = FirebaseDatabase.instance
@@ -95,34 +115,39 @@ class _FeedScreenState extends State<FeedScreen> {
           .child('users')
           .child(photo.userId ?? '')
           .child('photos')
-          .child(photo.id);
+          .child(photo.id)
+          .child('likes')
+          .child(currentUser.uid);
 
-      final likesRef = photoRef.child('likes');
-      final userLikeRef = likesRef.child(currentUser.uid);
+      print('Database path: ${photoRef.path}');
 
-      final snapshot = await userLikeRef.get();
-      if (snapshot.exists) {
-        // Unlike
-        await userLikeRef.remove();
+      final snapshot = await photoRef.get();
+      
+      if (mounted) {
         setState(() {
-          photo.isLiked = false;
-          photo.likesCount = math.max(0, photo.likesCount - 1);
+          if (snapshot.exists) {
+            // Unlike
+            photoRef.remove();
+            photo.isLiked = false;
+            photo.likesCount = math.max(0, photo.likesCount - 1);
+          } else {
+            // Like
+            photoRef.set(true);
+            photo.isLiked = true;
+            photo.likesCount++;
+          }
         });
-        fullScreenSetState?.call(() {}); // Update full-screen view if open
-      } else {
-        // Like
-        await userLikeRef.set(true);
-        setState(() {
-          photo.isLiked = true;
-          photo.likesCount++;
-        });
-        fullScreenSetState?.call(() {}); // Update full-screen view if open
+        
+        fullScreenSetState?.call(() {});
       }
+
     } catch (e) {
       print('Error toggling like: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update like: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update like: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -270,7 +295,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 },
               ),
             ),
-            // Image
+            // Image with like button
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -291,32 +316,47 @@ class _FeedScreenState extends State<FeedScreen> {
                   Positioned(
                     top: 4,
                     right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${photo.likesCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${photo.likesCount}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            onTap: () => _toggleLike(photo, null),
-                            child: Icon(
-                              photo.isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: photo.isLiked ? Colors.red : Colors.white,
-                              size: 20,
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () {
+                                final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                                if (currentUser == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please log in to like photos')),
+                                  );
+                                  return;
+                                }
+                                _toggleLike(photo, null);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Icon(
+                                  photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                                  color: photo.isLiked ? Colors.red : Colors.white,
+                                  size: 20,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

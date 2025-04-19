@@ -6,7 +6,7 @@ import '../models/user_model.dart';
 
 class AppState extends ChangeNotifier {
   User? _currentUser;
-  Map<String, String> _usernames = {};
+  final Map<String, String> _usernames = {};
   List<PhotoData> _photos = [];
   bool _isLoading = false;
   String? _error;
@@ -203,5 +203,17 @@ class AppState extends ChangeNotifier {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Initialize user from Firebase Auth
+  Future<void> initializeUser() async {
+    _currentUser = FirebaseAuth.instance.currentUser;
+    notifyListeners();
+    
+    // Listen for auth state changes
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      _currentUser = user;
+      notifyListeners();
+    });
   }
 } 

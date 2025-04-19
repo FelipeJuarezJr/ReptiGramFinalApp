@@ -87,41 +87,109 @@ class _FeedScreenState extends State<FeedScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(15.0),
         onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => Dialog(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (photo.firebaseUrl != null)
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
-                      child: Image.network(
-                        photo.firebaseUrl!,
-                        fit: BoxFit.cover,
-                      ),
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (context) => StatefulBuilder(
+                builder: (context, setState) => Scaffold(
+                  backgroundColor: Colors.black,
+                  appBar: AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    leading: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    actions: [
+                      // Add like button to app bar
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: IconButton(
+                          icon: Icon(
+                            photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: photo.isLiked ? Colors.red : Colors.white,
+                            size: 28,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              photo.isLiked = !photo.isLiked;
+                            });
+                            // TODO: Update like status in database
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  body: SafeArea(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          photo.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Center(
+                            child: Hero(
+                              tag: photo.id,
+                              child: InteractiveViewer(
+                                minScale: 0.5,
+                                maxScale: 4.0,
+                                child: photo.firebaseUrl != null
+                                  ? Image.network(
+                                      photo.firebaseUrl!,
+                                      fit: BoxFit.contain,
+                                    )
+                                  : const Icon(Icons.image, size: 100, color: Colors.white),
+                              ),
+                            ),
                           ),
                         ),
-                        if (photo.comment.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(photo.comment),
+                        Container(
+                          color: Colors.black.withOpacity(0.7),
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              FutureBuilder<String?>(
+                                future: appState.fetchUsername(photo.userId ?? ''),
+                                builder: (context, snapshot) {
+                                  return Text(
+                                    snapshot.data ?? 'Loading...',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  );
+                                },
+                              ),
+                              if (photo.title.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    photo.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              if (photo.comment.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    photo.comment,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           );

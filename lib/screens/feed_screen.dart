@@ -80,8 +80,12 @@ class _FeedScreenState extends State<FeedScreen> {
   Widget _buildGridItem(PhotoData photo) {
     final appState = Provider.of<AppState>(context, listen: false);
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
       color: Colors.white.withOpacity(0.9),
       child: InkWell(
+        borderRadius: BorderRadius.circular(15.0),
         onTap: () {
           showDialog(
             context: context,
@@ -90,9 +94,12 @@ class _FeedScreenState extends State<FeedScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (photo.firebaseUrl != null)
-                    Image.network(
-                      photo.firebaseUrl!,
-                      fit: BoxFit.cover,
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(15.0)),
+                      child: Image.network(
+                        photo.firebaseUrl!,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -146,9 +153,12 @@ class _FeedScreenState extends State<FeedScreen> {
                 fit: StackFit.expand,
                 children: [
                   if (photo.firebaseUrl != null)
-                    Image.network(
-                      photo.firebaseUrl!,
-                      fit: BoxFit.cover,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10.0),
+                      child: Image.network(
+                        photo.firebaseUrl!,
+                        fit: BoxFit.cover,
+                      ),
                     )
                   else
                     const Center(

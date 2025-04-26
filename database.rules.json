@@ -1,5 +1,20 @@
 {
   "rules": {
+    "posts": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$postId": {
+        ".validate": "newData.hasChildren(['userId', 'content', 'timestamp'])",
+        "likes": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        },
+        "comments": {
+          ".read": "auth != null",
+          ".write": "auth != null"
+        }
+      }
+    },
     "users": {
       ".read": "auth != null",
       "$userId": {

@@ -47,60 +47,63 @@ class _PostScreenState extends State<PostScreen> {
 
       final snapshot = await postsRef.get();
 
-      if (snapshot.value != null) {
+      // Check if there are any posts
+      if (!snapshot.exists || snapshot.value == null) {
+        setState(() {
+          _posts.clear();
+          _isLoading = false;
+        });
+        return;
+      }
+
+      try {
         final data = snapshot.value as Map<dynamic, dynamic>;
         final List<PostModel> loadedPosts = [];
 
-        // Fetch usernames for all posts
-        for (var entry in data.entries) {
-          final postUserId = entry.value['userId'] as String?;
-          if (postUserId != null) {
-            await _fetchUsername(postUserId);
-          }
-        }
-
         // Process posts
         data.forEach((key, value) {
-          // Check if the post has likes
-          Map<dynamic, dynamic> likesMap = {};
-          if (value['likes'] != null) {
-            likesMap = value['likes'] as Map<dynamic, dynamic>;
-          }
-          final isLiked = likesMap.containsKey(userId);
-          final likeCount = likesMap.length;
+          try {
+            // Check if the post has likes
+            Map<dynamic, dynamic> likesMap = {};
+            if (value['likes'] != null) {
+              likesMap = value['likes'] as Map<dynamic, dynamic>;
+            }
+            final isLiked = likesMap.containsKey(userId);
+            final likeCount = likesMap.length;
 
-          // Parse comments
-          final List<CommentModel> comments = [];
-          if (value['comments'] != null) {
-            (value['comments'] as Map<dynamic, dynamic>).forEach((commentKey, commentValue) {
-              comments.add(CommentModel(
-                id: commentKey,
-                userId: commentValue['userId'] ?? '',
-                content: commentValue['content'] ?? '',
-                timestamp: DateTime.fromMillisecondsSinceEpoch(
-                  commentValue['timestamp'] is int 
-                      ? commentValue['timestamp'] 
-                      : int.parse(commentValue['timestamp'].toString())
-                ),
-              ));
-            });
-          }
+            // Parse comments
+            final List<CommentModel> comments = [];
+            if (value['comments'] != null) {
+              (value['comments'] as Map<dynamic, dynamic>).forEach((commentKey, commentValue) {
+                comments.add(CommentModel(
+                  id: commentKey,
+                  userId: commentValue['userId'] ?? '',
+                  content: commentValue['content'] ?? '',
+                  timestamp: DateTime.now(),  // Default to now if no timestamp
+                ));
+              });
+            }
 
-          // Create post model
-          final post = PostModel(
-            id: key,
-            userId: value['userId'] ?? '',
-            content: value['content'] ?? '',
-            timestamp: DateTime.fromMillisecondsSinceEpoch(
-              value['timestamp'] is int 
-                  ? value['timestamp'] 
-                  : int.parse(value['timestamp'].toString())
-            ),
-            isLiked: isLiked,
-            likeCount: likeCount,
-            comments: comments,
-          );
-          loadedPosts.add(post);
+            // Create post model
+            final post = PostModel(
+              id: key,
+              userId: value['userId'] ?? '',
+              content: value['content'] ?? '',
+              timestamp: DateTime.now(),  // Default to now if no timestamp
+              isLiked: isLiked,
+              likeCount: likeCount,
+              comments: comments,
+            );
+            loadedPosts.add(post);
+
+            // Fetch username after creating post
+            if (post.userId.isNotEmpty) {
+              _fetchUsername(post.userId);
+            }
+          } catch (e) {
+            print('Error processing individual post: $e');
+            // Continue to next post
+          }
         });
 
         setState(() {
@@ -108,12 +111,12 @@ class _PostScreenState extends State<PostScreen> {
           _posts.addAll(loadedPosts);
           _posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
         });
+      } catch (e) {
+        print('Error processing posts data: $e');
       }
+
     } catch (e) {
       print('Error loading posts: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load posts: ${e.toString()}')),
-      );
     } finally {
       setState(() => _isLoading = false);
     }

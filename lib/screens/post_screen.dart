@@ -247,9 +247,22 @@ class _PostScreenState extends State<PostScreen> {
                         final comment = post.comments[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Text(
-                            comment.content,
-                            style: const TextStyle(color: Colors.brown),
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${_usernames[comment.userId] ?? 'Loading...'}: ',
+                                  style: const TextStyle(
+                                    color: Colors.brown,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: comment.content,
+                                  style: const TextStyle(color: Colors.brown),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -286,6 +299,9 @@ class _PostScreenState extends State<PostScreen> {
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
+
+      // Ensure we have the username for the commenter
+      await _fetchUsername(userId);
 
       final commentId = DateTime.now().millisecondsSinceEpoch.toString();
       final commentData = {
@@ -530,7 +546,7 @@ class _PostScreenState extends State<PostScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  'Latest: ${post.comments.last.content}',
+                                  'Latest: ${_usernames[post.comments.last.userId] ?? 'Loading...'}: ${post.comments.last.content}',
                                   style: const TextStyle(
                                     color: Colors.brown,
                                     fontSize: 14,

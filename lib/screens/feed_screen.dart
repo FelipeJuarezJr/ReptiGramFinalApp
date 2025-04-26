@@ -107,58 +107,41 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _toggleLike(PhotoData photo, StateSetter? fullScreenSetState) async {
     final appState = Provider.of<AppState>(context, listen: false);
     final currentUser = appState.currentUser;
+    final userId = photo.userId;
     
-    print('Current user: ${currentUser?.uid}');
-    
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please log in to like photos'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
+    if (currentUser == null) return;
+    if (userId == null) return;
 
     try {
-      final photoRef = FirebaseDatabase.instance
+      // Use the same structure as post_screen.dart
+      final likesRef = FirebaseDatabase.instance
           .ref()
-          .child('users')
-          .child(photo.userId ?? '')
-          .child('photos')
+          .child('posts')  // Changed from 'users/{userId}/photos'
           .child(photo.id)
           .child('likes')
           .child(currentUser.uid);
 
-      print('Database path: ${photoRef.path}');
+      // Optimistic update
+      setState(() {
+        photo.isLiked = !photo.isLiked;
+        photo.likesCount += photo.isLiked ? 1 : -1;
+      });
+      fullScreenSetState?.call(() {});
 
-      final snapshot = await photoRef.get();
-      
-      if (mounted) {
-        setState(() {
-          if (snapshot.exists) {
-            // Unlike
-            photoRef.remove();
-            photo.isLiked = false;
-            photo.likesCount = math.max(0, photo.likesCount - 1);
-          } else {
-            // Like
-            photoRef.set(true);
-            photo.isLiked = true;
-            photo.likesCount++;
-          }
-        });
-        
-        fullScreenSetState?.call(() {});
+      if (photo.isLiked) {
+        await likesRef.set(true);
+      } else {
+        await likesRef.remove();
       }
 
     } catch (e) {
-      print('Error toggling like: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update like: ${e.toString()}')),
-        );
-      }
+      // Revert on error
+      setState(() {
+        photo.isLiked = !photo.isLiked;
+        photo.likesCount += photo.isLiked ? 1 : -1;
+      });
+      fullScreenSetState?.call(() {});
+      print('Error path: ${e.toString()}');
     }
   }
 
@@ -383,52 +366,32 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
     }
   }
 
-  Future<void> _postComment() async {
+  Future<void> _postComment(PhotoData photo, String content) async {
     final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to comment')),
-      );
-      return;
-    }
-
-    final comment = _commentController.text.trim();
-    if (comment.isEmpty) return;
+    if (currentUser == null) return;
+    final userId = photo.userId;
+    if (userId == null) return;
 
     try {
-      final newCommentRef = FirebaseDatabase.instance
+      // Use the same structure as post_screen.dart
+      final commentsRef = FirebaseDatabase.instance
           .ref()
-          .child('users')
-          .child(widget.photo.userId ?? '')
-          .child('photos')
-          .child(widget.photo.id)
-          .child('comments')
-          .push();
+          .child('posts')  // Changed from 'users/{userId}/photos'
+          .child(photo.id)
+          .child('comments');
 
+      final newCommentRef = commentsRef.push();
       await newCommentRef.set({
         'userId': currentUser.uid,
-        'content': comment,
-        'timestamp': ServerValue.timestamp,
+        'content': content,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
       });
 
       _commentController.clear();
-      
-      // Scroll to bottom to see new comment at the end
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      setState(() {});
+
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to post comment: $e')),
-        );
-      }
+      print('Error posting comment: $e');
     }
   }
 
@@ -502,70 +465,48 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
                         .child('photos')
                         .child(widget.photo.id)
                         .child('comments')
+                        .orderByChild('timestamp')
                         .onValue,
                     builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
                       if (snapshot.hasError) {
-                        return const Center(
-                          child: Text('Error loading comments'),
-                        );
+                        return const Center(child: Text('Error loading comments'));
                       }
-
                       if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
-                        return const Center(
-                          child: Text('No comments yet'),
-                        );
+                        return const Center(child: Text('No comments yet'));
                       }
 
-                      final commentsMap = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                      final comments = commentsMap.entries.map((entry) {
-                        return CommentData.fromMap(
-                          entry.key.toString(),
-                          entry.value as Map<dynamic, dynamic>,
+                      final commentsData = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+                      final commentsList = commentsData.entries.map((entry) {
+                        final commentMap = entry.value as Map<dynamic, dynamic>;
+                        return CommentData(
+                          id: entry.key,
+                          content: commentMap['content'] ?? '',
+                          timestamp: commentMap['timestamp'] ?? 0,
+                          userId: commentMap['userId'] ?? '',
                         );
-                      }).toList();
-
-                      // Sort by timestamp ascending (oldest first)
-                      comments.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                      }).toList()
+                        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));  // Newest first
 
                       return ListView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.all(8),
-                        itemCount: comments.length,
+                        itemCount: commentsList.length,
                         itemBuilder: (context, index) {
-                          final comment = comments[index];
+                          final comment = commentsList[index];
                           return FutureBuilder<String?>(
                             future: Provider.of<AppState>(context, listen: false)
                                 .fetchUsername(comment.userId),
                             builder: (context, usernameSnapshot) {
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 8.0),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        usernameSnapshot.data ?? 'Loading...',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        comment.content,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _formatTimestamp(comment.timestamp),
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              return ListTile(
+                                title: Text(
+                                  '${usernameSnapshot.data ?? 'Loading...'}: ${comment.content}',
+                                  style: const TextStyle(color: Colors.brown),
+                                ),
+                                subtitle: Text(
+                                  _formatTimestamp(comment.timestamp),
+                                  style: TextStyle(color: Colors.brown[400]),
                                 ),
                               );
                             },
@@ -589,12 +530,12 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
                           ),
                           maxLines: null,
                           textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _postComment(),
+                          onSubmitted: (_) => _postComment(widget.photo, _commentController.text.trim()),
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.send),
-                        onPressed: _postComment,
+                        onPressed: () => _postComment(widget.photo, _commentController.text.trim()),
                         color: Theme.of(context).primaryColor,
                       ),
                     ],

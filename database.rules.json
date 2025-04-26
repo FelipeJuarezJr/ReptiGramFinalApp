@@ -1,36 +1,37 @@
 {
   "rules": {
-    "posts": {
-      ".read": "auth != null",
-      ".write": "auth != null",
-      "$postId": {
-        ".validate": "newData.hasChildren(['userId', 'imageUrl', 'caption', 'timestamp'])",
-        "userId": {
-          ".validate": "newData.val() === auth.uid"
-        },
-        "likes": {
-          "$userId": {
-            ".validate": "newData.isBoolean()",
-            ".write": "auth != null && auth.uid === $userId"
-          }
-        },
-        "comments": {
-          ".read": "auth != null",
-          ".write": "auth != null",
-          "$commentId": {
-            ".validate": "newData.hasChildren(['userId', 'text', 'timestamp'])",
-            "userId": {
-              ".validate": "newData.val() === auth.uid"
-            }
-          }
-        }
-      }
-    },
     "users": {
       ".read": "auth != null",
       "$userId": {
-        ".write": "auth != null && auth.uid === $userId",
-        ".validate": "newData.hasChildren(['username', 'email'])"
+        ".read": "auth != null",
+        
+        "username": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === $userId"
+        },
+        "email": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === $userId"
+        },
+
+        "photos": {
+          ".read": "auth != null",
+          "$photoId": {
+            ".read": "auth != null",
+            
+            "likes": {
+              ".read": "auth != null",
+              "$likerId": {
+                ".write": "auth != null"
+              }
+            },
+
+            "comments": {
+              ".read": "auth != null",
+              ".write": "auth != null"
+            }
+          }
+        }
       }
     }
   }

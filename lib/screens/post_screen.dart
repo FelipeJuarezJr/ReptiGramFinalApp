@@ -211,50 +211,54 @@ class _PostScreenState extends State<PostScreen> {
           'Add Comment',
           style: TextStyle(color: Colors.brown),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: commentController,
-              decoration: InputDecoration(
-                hintText: 'Write a comment...',
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                border: OutlineInputBorder(
-                  borderRadius: AppColors.pillShape,
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: commentController,
+                  decoration: InputDecoration(
+                    hintText: 'Write a comment...',
+                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    border: OutlineInputBorder(
+                      borderRadius: AppColors.pillShape,
+                    ),
+                  ),
+                  maxLines: 3,
                 ),
-              ),
-              maxLines: 3,
+                const SizedBox(height: 16),
+                if (post.comments.isNotEmpty) ...[
+                  const Text(
+                    'Comments:',
+                    style: TextStyle(
+                      color: Colors.brown,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 150),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: post.comments.length,
+                      itemBuilder: (context, index) {
+                        final comment = post.comments[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Text(
+                            comment.content,
+                            style: const TextStyle(color: Colors.brown),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 16),
-            // Show existing comments
-            if (post.comments.isNotEmpty) ...[
-              const Text(
-                'Comments:',
-                style: TextStyle(
-                  color: Colors.brown,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 200),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: post.comments.length,
-                  itemBuilder: (context, index) {
-                    final comment = post.comments[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Text(
-                        comment.content,
-                        style: const TextStyle(color: Colors.brown),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
         actions: [
           TextButton(

@@ -29,10 +29,8 @@ class _PostScreenState extends State<PostScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.shouldLoadPosts) {
-      // Load posts when coming from login
-      _loadPosts();
-    }
+    // Always load posts when screen is mounted
+    _loadPosts();
   }
 
   Future<void> _loadPosts() async {

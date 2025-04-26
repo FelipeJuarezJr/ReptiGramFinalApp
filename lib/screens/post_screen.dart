@@ -247,22 +247,35 @@ class _PostScreenState extends State<PostScreen> {
                         final comment = post.comments[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '${_usernames[comment.userId] ?? 'Loading...'}: ',
-                                  style: const TextStyle(
-                                    color: Colors.brown,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '${_usernames[comment.userId] ?? 'Loading...'}: ',
+                                      style: const TextStyle(
+                                        color: Colors.brown,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: comment.content,
+                                      style: const TextStyle(color: Colors.brown),
+                                    ),
+                                  ],
                                 ),
-                                TextSpan(
-                                  text: comment.content,
-                                  style: const TextStyle(color: Colors.brown),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _formatTimestamp(comment.timestamp),
+                                style: TextStyle(
+                                  color: Colors.brown[400],
+                                  fontSize: 12,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -545,12 +558,25 @@ class _PostScreenState extends State<PostScreen> {
                                   color: Colors.brown.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(
-                                  'Latest: ${_usernames[post.comments.last.userId] ?? 'Loading...'}: ${post.comments.last.content}',
-                                  style: const TextStyle(
-                                    color: Colors.brown,
-                                    fontSize: 14,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Latest: ${_usernames[post.comments.last.userId] ?? 'Loading...'}: ${post.comments.last.content}',
+                                      style: const TextStyle(
+                                        color: Colors.brown,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatTimestamp(post.comments.last.timestamp),
+                                      style: TextStyle(
+                                        color: Colors.brown[400],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],

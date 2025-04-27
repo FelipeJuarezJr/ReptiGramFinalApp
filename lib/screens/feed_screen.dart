@@ -84,6 +84,15 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
+  void _showFullScreenImage(PhotoData photo) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => FullScreenPhotoView(photo: photo),
+      ),
+    );
+  }
+
   Widget _buildGridItem(PhotoData photo) {
     final appState = Provider.of<AppState>(context, listen: false);
     return Card(
@@ -91,49 +100,53 @@ class _FeedScreenState extends State<FeedScreen> {
         borderRadius: BorderRadius.circular(15.0),
       ),
       color: Colors.white.withOpacity(0.9),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Photo as background
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15.0),
-            child: photo.firebaseUrl != null
-                ? Image.network(
-                    photo.firebaseUrl!,
-                    fit: BoxFit.cover,
-                  )
-                : const Center(
-                    child: Icon(Icons.image),
-                  ),
-          ),
-          // Username overlay at the top
-          Positioned(
-            top: 4,
-            left: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: FutureBuilder<String?>(
-                future: appState.fetchUsername(photo.userId ?? ''),
-                builder: (context, snapshot) {
-                  return Text(
-                    snapshot.data ?? 'Loading...',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+      child: InkWell(
+        onTap: () => _showFullScreenImage(photo),
+        borderRadius: BorderRadius.circular(15.0),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Photo as background
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15.0),
+              child: photo.firebaseUrl != null
+                  ? Image.network(
+                      photo.firebaseUrl!,
+                      fit: BoxFit.cover,
+                    )
+                  : const Center(
+                      child: Icon(Icons.image),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  );
-                },
+            ),
+            // Username overlay at the top
+            Positioned(
+              top: 4,
+              left: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: FutureBuilder<String?>(
+                  future: appState.fetchUsername(photo.userId ?? ''),
+                  builder: (context, snapshot) {
+                    return Text(
+                      snapshot.data ?? 'Loading...',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -179,6 +192,45 @@ class _FeedScreenState extends State<FeedScreen> {
                           ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FullScreenPhotoView extends StatelessWidget {
+  final PhotoData photo;
+
+  const FullScreenPhotoView({
+    super.key,
+    required this.photo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Hero(
+            tag: photo.id,
+            child: photo.firebaseUrl != null
+                ? Image.network(
+                    photo.firebaseUrl!,
+                    fit: BoxFit.contain,
+                  )
+                : const Icon(Icons.image, size: 100, color: Colors.white),
           ),
         ),
       ),

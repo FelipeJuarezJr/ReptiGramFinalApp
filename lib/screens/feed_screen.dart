@@ -35,6 +35,7 @@ class _FeedScreenState extends State<FeedScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // First get all photos from users
       final usersSnapshot = await FirebaseDatabase.instance
           .ref()
           .child('users')
@@ -46,16 +47,27 @@ class _FeedScreenState extends State<FeedScreen> {
       final usersData = usersSnapshot.value as Map<dynamic, dynamic>;
       final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
 
+      // Then get likes from posts node for each photo
       for (var entry in usersData.entries) {
         final userId = entry.key as String;
         final userData = entry.value as Map<dynamic, dynamic>;
 
         if (userData['photos'] != null) {
           final photos = userData['photos'] as Map<dynamic, dynamic>;
-          photos.forEach((photoId, photoData) {
-            final likes = (photoData['likes'] as Map<dynamic, dynamic>?) ?? {};
+          for (var photoEntry in photos.entries) {
+            final photoId = photoEntry.key;
+            final photoData = photoEntry.value as Map<dynamic, dynamic>;
+            
+            // Get likes from posts node instead of users node
+            final likesSnapshot = await FirebaseDatabase.instance
+                .ref()
+                .child('posts')
+                .child(photoId)
+                .child('likes')
+                .get();
+
+            final likes = (likesSnapshot.value as Map<dynamic, dynamic>?) ?? {};
             final isLiked = currentUser != null && likes[currentUser.uid] == true;
-            final timestamp = photoData['timestamp'] ?? 0;
 
             final photo = PhotoData(
               id: photoId.toString(),
@@ -65,11 +77,11 @@ class _FeedScreenState extends State<FeedScreen> {
               comment: photoData['comment'] ?? '',
               isLiked: isLiked,
               userId: userId,
-              timestamp: timestamp,
+              timestamp: photoData['timestamp'] ?? 0,
               likesCount: likes.length,
             );
             allPhotos.add(photo);
-          });
+          }
         }
       }
 

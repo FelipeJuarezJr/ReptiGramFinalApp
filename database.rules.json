@@ -1,62 +1,18 @@
 {
   "rules": {
-    ".read": false, 
-    "posts": {
-      ".read": "auth != null", 
-      ".write": "auth != null",
-      "$postId": {
-        ".validate": "newData.hasChildren(['userId', 'content', 'timestamp'])",
-        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)",
-        "likes": {
-          ".read": "auth != null",
-          "$likeId": {
-            ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)"
-          }
-        },
-        "comments": {
-          ".read": "auth != null",
-          "$commentId": {
-            ".write": "auth != null && (!data.exists() || newData.child('userId').val() === auth.uid)"
-          }
-        }
-      }
-    },
+    ".read": true,
     "users": {
-      ".read": "auth != null", 
       "$userId": {
-        ".read": "auth != null",
-        ".write": "auth != null && auth.uid === $userId",
+        ".read": true,
         "photos": {
-          ".read": "auth != null",
           "$photoId": {
-            ".read": "auth != null",
-            ".write": "auth != null && auth.uid === $userId",
+            ".read": true,
             "likes": {
-              ".read": "auth != null",
-              "$likeId": {
-                ".write": "auth != null && (!data.exists() || $likeId === auth.uid)"
-              }
-            },
-            "comments": {
-              ".read": "auth != null",
-              "$commentId": {
-                ".write": "auth != null && (!data.exists() || newData.child('userId').val() === auth.uid)"
-              }
+              ".read": true,
+              ".write": "auth != null"
             }
           }
         }
-      }
-    },
-    "likes": {
-      ".read": "auth != null", 
-      "$likeId": {
-        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)"
-      }
-    },
-    "comments": {
-      ".read": "auth != null", 
-      "$commentId": {
-        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)"
       }
     }
   }

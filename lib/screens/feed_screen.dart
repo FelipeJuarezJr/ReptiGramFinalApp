@@ -21,7 +21,13 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => _loadPhotos());
+    Future.microtask(() async {
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.initializeUser(); // Make sure user is initialized
+      if (mounted) {
+        await _loadPhotos();
+      }
+    });
   }
 
   Future<void> _loadPhotos() async {
@@ -199,29 +205,28 @@ class _FeedScreenState extends State<FeedScreen> {
   Future<void> _toggleLike(PhotoData photo) async {
     final appState = Provider.of<AppState>(context, listen: false);
     final currentUser = appState.currentUser;
-    final photoOwnerId = photo.userId;
-
-    if (currentUser == null) return;
-    if (photoOwnerId == null) {
-      print('Error: Photo owner ID is null');
+    
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to like photos')),
+      );
       return;
     }
 
     try {
-      final likesRef = FirebaseDatabase.instance
-          .ref()
-          .child('users')
-          .child(photoOwnerId)
-          .child('photos')
-          .child(photo.id)
-          .child('likes')
-          .child(currentUser.uid);
-
       // Optimistic update
       setState(() {
         photo.isLiked = !photo.isLiked;
         photo.likesCount += photo.isLiked ? 1 : -1;
       });
+
+      // Use the same path structure as post_screen.dart
+      final likesRef = FirebaseDatabase.instance
+          .ref()
+          .child('posts')  // Changed from 'users'
+          .child(photo.id)  // Use photo.id directly
+          .child('likes')
+          .child(currentUser.uid);
 
       if (photo.isLiked) {
         await likesRef.set(true);

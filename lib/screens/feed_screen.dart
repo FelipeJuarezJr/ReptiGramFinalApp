@@ -145,10 +145,101 @@ class _FeedScreenState extends State<FeedScreen> {
                 ),
               ),
             ),
+            // Like button overlay at the top right
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${photo.likesCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: () {
+                        final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                        if (currentUser == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please log in to like photos')),
+                          );
+                          return;
+                        }
+                        _toggleLike(photo);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: photo.isLiked ? Colors.red : Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _toggleLike(PhotoData photo) async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final currentUser = appState.currentUser;
+    final photoOwnerId = photo.userId;
+
+    if (currentUser == null) return;
+    if (photoOwnerId == null) {
+      print('Error: Photo owner ID is null');
+      return;
+    }
+
+    try {
+      final likesRef = FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(photoOwnerId)
+          .child('photos')
+          .child(photo.id)
+          .child('likes')
+          .child(currentUser.uid);
+
+      // Optimistic update
+      setState(() {
+        photo.isLiked = !photo.isLiked;
+        photo.likesCount += photo.isLiked ? 1 : -1;
+      });
+
+      if (photo.isLiked) {
+        await likesRef.set(true);
+      } else {
+        await likesRef.remove();
+      }
+
+    } catch (e) {
+      // Revert on error
+      setState(() {
+        photo.isLiked = !photo.isLiked;
+        photo.likesCount += photo.isLiked ? 1 : -1;
+      });
+      print('Error toggling like: ${e.toString()}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update like: ${e.toString()}')),
+      );
+    }
   }
 
   @override

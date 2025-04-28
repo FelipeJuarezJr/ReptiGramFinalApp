@@ -63,9 +63,14 @@ class _FeedScreenState extends State<FeedScreen> {
         if (userData['photos'] != null) {
           final photos = userData['photos'] as Map<dynamic, dynamic>;
           photos.forEach((photoId, photoData) {
-            // Get likes from our pre-fetched data
             final photoLikes = (likesData[photoId]?['likes'] as Map<dynamic, dynamic>?) ?? {};
             final isLiked = currentUser != null && photoLikes[currentUser.uid] == true;
+
+            // Make sure we get the correct timestamp
+            final timestamp = photoData['timestamp'] is int 
+                ? photoData['timestamp'] as int
+                : (photoData['timestamp'] as Map<dynamic, dynamic>?)?.values.first as int? 
+                ?? DateTime.now().millisecondsSinceEpoch;
 
             final photo = PhotoData(
               id: photoId.toString(),
@@ -75,7 +80,7 @@ class _FeedScreenState extends State<FeedScreen> {
               comment: photoData['comment'] ?? '',
               isLiked: isLiked,
               userId: userId,
-              timestamp: photoData['timestamp'] ?? 0,
+              timestamp: timestamp,  // Use the corrected timestamp
               likesCount: photoLikes.length,
             );
             allPhotos.add(photo);
@@ -358,6 +363,13 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
       });
 
       _commentController.clear();
+      
+      // Scroll to top after posting
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     } catch (e) {
       print('Error posting comment: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -453,6 +465,7 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
                         .child(widget.photo.id)
                         .child('comments')
                         .orderByChild('timestamp')
+                        .limitToLast(100)
                         .onValue,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
@@ -472,6 +485,9 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
 
                       return ListView.builder(
                         controller: _scrollController,
+                        reverse: true,
+                        padding: const EdgeInsets.only(bottom: 8),
+                        physics: const AlwaysScrollableScrollPhysics(),
                         itemCount: commentsList.length,
                         itemBuilder: (context, index) {
                           final comment = commentsList[index];

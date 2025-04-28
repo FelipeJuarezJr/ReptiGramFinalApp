@@ -35,10 +35,16 @@ class _FeedScreenState extends State<FeedScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // First get all photos from users
+      // Get all photos from users
       final usersSnapshot = await FirebaseDatabase.instance
           .ref()
           .child('users')
+          .get();
+
+      // Get all likes in one call
+      final likesSnapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('posts')
           .get();
 
       if (!usersSnapshot.exists) return;
@@ -46,28 +52,20 @@ class _FeedScreenState extends State<FeedScreen> {
       final List<PhotoData> allPhotos = [];
       final usersData = usersSnapshot.value as Map<dynamic, dynamic>;
       final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      
+      // Convert likes snapshot to Map for faster lookups
+      final likesData = (likesSnapshot.value as Map<dynamic, dynamic>?) ?? {};
 
-      // Then get likes from posts node for each photo
       for (var entry in usersData.entries) {
         final userId = entry.key as String;
         final userData = entry.value as Map<dynamic, dynamic>;
 
         if (userData['photos'] != null) {
           final photos = userData['photos'] as Map<dynamic, dynamic>;
-          for (var photoEntry in photos.entries) {
-            final photoId = photoEntry.key;
-            final photoData = photoEntry.value as Map<dynamic, dynamic>;
-            
-            // Get likes from posts node instead of users node
-            final likesSnapshot = await FirebaseDatabase.instance
-                .ref()
-                .child('posts')
-                .child(photoId)
-                .child('likes')
-                .get();
-
-            final likes = (likesSnapshot.value as Map<dynamic, dynamic>?) ?? {};
-            final isLiked = currentUser != null && likes[currentUser.uid] == true;
+          photos.forEach((photoId, photoData) {
+            // Get likes from our pre-fetched data
+            final photoLikes = (likesData[photoId]?['likes'] as Map<dynamic, dynamic>?) ?? {};
+            final isLiked = currentUser != null && photoLikes[currentUser.uid] == true;
 
             final photo = PhotoData(
               id: photoId.toString(),
@@ -78,10 +76,10 @@ class _FeedScreenState extends State<FeedScreen> {
               isLiked: isLiked,
               userId: userId,
               timestamp: photoData['timestamp'] ?? 0,
-              likesCount: likes.length,
+              likesCount: photoLikes.length,
             );
             allPhotos.add(photo);
-          }
+          });
         }
       }
 

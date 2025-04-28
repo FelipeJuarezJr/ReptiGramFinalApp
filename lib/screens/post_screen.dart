@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import '../models/post_model.dart';
 import '../models/comment_model.dart';
+import 'package:intl/intl.dart';
 
 class PostScreen extends StatefulWidget {
   final bool shouldLoadPosts;
@@ -47,7 +48,6 @@ class _PostScreenState extends State<PostScreen> {
 
       final snapshot = await postsRef.get();
 
-      // Check if there are any posts
       if (!snapshot.exists || snapshot.value == null) {
         setState(() {
           _posts.clear();
@@ -60,10 +60,8 @@ class _PostScreenState extends State<PostScreen> {
         final data = snapshot.value as Map<dynamic, dynamic>;
         final List<PostModel> loadedPosts = [];
 
-        // Process posts
         data.forEach((key, value) {
           try {
-            // Check if the post has likes
             Map<dynamic, dynamic> likesMap = {};
             if (value['likes'] != null) {
               likesMap = value['likes'] as Map<dynamic, dynamic>;
@@ -79,42 +77,41 @@ class _PostScreenState extends State<PostScreen> {
                   id: commentKey,
                   userId: commentValue['userId'] ?? '',
                   content: commentValue['content'] ?? '',
-                  timestamp: DateTime.now(),  // Default to now if no timestamp
+                  timestamp: DateTime.fromMillisecondsSinceEpoch(commentValue['timestamp'] ?? 0),
                 ));
               });
             }
 
-            // Create post model
+            // Create post model with actual timestamp
             final post = PostModel(
               id: key,
               userId: value['userId'] ?? '',
               content: value['content'] ?? '',
-              timestamp: DateTime.now(),  // Default to now if no timestamp
+              timestamp: DateTime.fromMillisecondsSinceEpoch(value['timestamp'] ?? 0),
               isLiked: isLiked,
               likeCount: likeCount,
               comments: comments,
             );
             loadedPosts.add(post);
 
-            // Fetch username after creating post
             if (post.userId.isNotEmpty) {
               _fetchUsername(post.userId);
             }
           } catch (e) {
             print('Error processing individual post: $e');
-            // Continue to next post
           }
         });
+
+        // Sort by timestamp (newest first)
+        loadedPosts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
         setState(() {
           _posts.clear();
           _posts.addAll(loadedPosts);
-          _posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
         });
       } catch (e) {
         print('Error processing posts data: $e');
       }
-
     } catch (e) {
       print('Error loading posts: $e');
     } finally {
@@ -601,14 +598,18 @@ class _PostScreenState extends State<PostScreen> {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
+    if (difference.inSeconds < 30) {
       return 'Just now';
+    } else if (difference.inMinutes < 1) {
+      return '${difference.inSeconds}s ago';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return DateFormat('MMM d, y').format(timestamp);
     }
   }
 

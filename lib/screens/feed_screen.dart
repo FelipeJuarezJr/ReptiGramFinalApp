@@ -323,6 +323,49 @@ class FullScreenPhotoView extends StatefulWidget {
 }
 
 class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
+  final TextEditingController _commentController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _postComment(String content) async {
+    final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to comment')),
+      );
+      return;
+    }
+
+    if (content.trim().isEmpty) return;
+
+    try {
+      final commentsRef = FirebaseDatabase.instance
+          .ref()
+          .child('posts')
+          .child(widget.photo.id)
+          .child('comments');
+
+      await commentsRef.push().set({
+        'userId': currentUser.uid,
+        'content': content.trim(),
+        'timestamp': ServerValue.timestamp,
+      });
+
+      _commentController.clear();
+    } catch (e) {
+      print('Error posting comment: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to post comment: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -373,21 +416,132 @@ class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
           ),
         ],
       ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Hero(
-            tag: widget.photo.id,
-            child: widget.photo.firebaseUrl != null
-                ? Image.network(
-                    widget.photo.firebaseUrl!,
-                    fit: BoxFit.contain,
-                  )
-                : const Icon(Icons.image, size: 100, color: Colors.white),
+      body: Column(
+        children: [
+          // Image viewer
+          Expanded(
+            child: Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Hero(
+                  tag: widget.photo.id,
+                  child: widget.photo.firebaseUrl != null
+                      ? Image.network(
+                          widget.photo.firebaseUrl!,
+                          fit: BoxFit.contain,
+                        )
+                      : const Icon(Icons.image, size: 100, color: Colors.white),
+                ),
+              ),
+            ),
           ),
-        ),
+          // Comments section
+          Container(
+            height: MediaQuery.of(context).size.height * 0.3,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: StreamBuilder<DatabaseEvent>(
+                    stream: FirebaseDatabase.instance
+                        .ref()
+                        .child('posts')
+                        .child(widget.photo.id)
+                        .child('comments')
+                        .orderByChild('timestamp')
+                        .onValue,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
+                        return const Center(child: Text('No comments yet'));
+                      }
+
+                      final commentsData = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+                      final commentsList = commentsData.entries.map((entry) {
+                        final comment = entry.value as Map<dynamic, dynamic>;
+                        return {
+                          'userId': comment['userId'] as String,
+                          'content': comment['content'] as String,
+                          'timestamp': comment['timestamp'] as int,
+                        };
+                      }).toList()
+                        ..sort((a, b) => (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+
+                      return ListView.builder(
+                        controller: _scrollController,
+                        itemCount: commentsList.length,
+                        itemBuilder: (context, index) {
+                          final comment = commentsList[index];
+                          return FutureBuilder<String?>(
+                            future: Provider.of<AppState>(context, listen: false)
+                                .fetchUsername(comment['userId'] as String),
+                            builder: (context, usernameSnapshot) {
+                              return ListTile(
+                                title: Text(
+                                  '${usernameSnapshot.data ?? 'Loading...'}: ${comment['content']}',
+                                  style: const TextStyle(color: Colors.brown),
+                                ),
+                                subtitle: Text(
+                                  _formatTimestamp(comment['timestamp'] as int),
+                                  style: TextStyle(color: Colors.brown[400]),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                // Comment input
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _commentController,
+                          decoration: const InputDecoration(
+                            hintText: 'Add a comment...',
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: null,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: _postComment,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: () => _postComment(_commentController.text),
+                        color: Theme.of(context).primaryColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _formatTimestamp(int timestamp) {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
   }
 }

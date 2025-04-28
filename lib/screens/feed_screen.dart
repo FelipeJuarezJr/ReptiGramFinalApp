@@ -104,7 +104,10 @@ class _FeedScreenState extends State<FeedScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (context) => FullScreenPhotoView(photo: photo),
+        builder: (context) => FullScreenPhotoView(
+          photo: photo,
+          onLikeToggled: _toggleLike,
+        ),
       ),
     );
   }
@@ -305,14 +308,21 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 }
 
-class FullScreenPhotoView extends StatelessWidget {
+class FullScreenPhotoView extends StatefulWidget {
   final PhotoData photo;
+  final Function(PhotoData) onLikeToggled;
 
   const FullScreenPhotoView({
     super.key,
     required this.photo,
+    required this.onLikeToggled,
   });
 
+  @override
+  State<FullScreenPhotoView> createState() => _FullScreenPhotoViewState();
+}
+
+class _FullScreenPhotoViewState extends State<FullScreenPhotoView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -324,16 +334,54 @@ class FullScreenPhotoView extends StatelessWidget {
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  '${widget.photo.likesCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
+                    final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                    if (currentUser == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please log in to like photos')),
+                      );
+                      return;
+                    }
+                    widget.onLikeToggled(widget.photo);
+                    setState(() {}); // Refresh UI after toggle
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(
+                      widget.photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: widget.photo.isLiked ? Colors.red : Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: Center(
         child: InteractiveViewer(
           minScale: 0.5,
           maxScale: 4.0,
           child: Hero(
-            tag: photo.id,
-            child: photo.firebaseUrl != null
+            tag: widget.photo.id,
+            child: widget.photo.firebaseUrl != null
                 ? Image.network(
-                    photo.firebaseUrl!,
+                    widget.photo.firebaseUrl!,
                     fit: BoxFit.contain,
                   )
                 : const Icon(Icons.image, size: 100, color: Colors.white),

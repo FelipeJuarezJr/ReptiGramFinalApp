@@ -294,8 +294,6 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   }
 
   Widget _buildAlbumCard(String albumName) {
-    final photos = albumPhotos[albumName] ?? [];
-    
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -303,7 +301,6 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
           MaterialPageRoute(
             builder: (context) => BindersScreen(
               albumName: albumName,
-              photos: photos,
             ),
           ),
         );
@@ -323,58 +320,21 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (photos.isNotEmpty && photos.first.firebaseUrl != null)
-              Expanded(
-                flex: 3,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                  child: Image.network(
-                    photos.first.firebaseUrl!,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              )
-            else
-              const Expanded(
-                flex: 3,
-                child: Icon(
-                  Icons.photo_album,
-                  size: 48,
-                  color: AppColors.titleText,
-                ),
+            const Icon(
+              Icons.folder,
+              size: 48,
+              color: AppColors.titleText,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              albumName,
+              style: const TextStyle(
+                color: AppColors.titleText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      albumName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '${photos.length} photos',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

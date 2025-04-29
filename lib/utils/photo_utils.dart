@@ -51,12 +51,11 @@ class PhotoUtils {
       final userId = _auth.currentUser?.uid;
       if (userId == null) throw Exception('No user logged in');
 
+      // Load all photos first
       final DataSnapshot snapshot = await _dbRef
           .child('users')
           .child(userId)
           .child('photos')
-          .orderByChild('source')
-          .equalTo(source)
           .get();
 
       if (snapshot.value == null) return [];
@@ -64,16 +63,19 @@ class PhotoUtils {
       final Map<dynamic, dynamic> photosMap = snapshot.value as Map;
       final List<PhotoData> photos = [];
 
+      // Filter by source in memory
       photosMap.forEach((key, value) {
-        photos.add(PhotoData(
-          id: key,
-          file: null,
-          firebaseUrl: value['firebaseUrl'] ?? value['url'],
-          title: value['title'] ?? 'Photo Details',
-          isLiked: value['isLiked'] ?? false,
-          comment: value['comment'] ?? '',
-          userId: userId,
-        ));
+        if (value['source'] == source) {  // Filter locally
+          photos.add(PhotoData(
+            id: key,
+            file: null,
+            firebaseUrl: value['firebaseUrl'] ?? value['url'],
+            title: value['title'] ?? 'Photo Details',
+            isLiked: value['isLiked'] ?? false,
+            comment: value['comment'] ?? '',
+            userId: userId,
+          ));
+        }
       });
 
       return photos;

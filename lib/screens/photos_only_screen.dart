@@ -46,7 +46,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     appState.setLoading(true);
 
     try {
-      final photos = await PhotoUtils.loadUserPhotos();
+      final photos = await PhotoUtils.loadUserPhotos(source: 'photos_only');
       appState.setPhotos(photos);
     } catch (e) {
       if (mounted) {  // Check again before showing error
@@ -127,6 +127,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
         'isLiked': newPhoto.isLiked,
         'comment': newPhoto.comment,
         'timestamp': ServerValue.timestamp,
+        'source': 'photos_only',
       });
 
       // Update app state

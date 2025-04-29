@@ -46,7 +46,7 @@ class PhotoUtils {
   }
 
   // Load user's photos
-  static Future<List<PhotoData>> loadUserPhotos() async {
+  static Future<List<PhotoData>> loadUserPhotos({String source = 'photos_only'}) async {
     try {
       final userId = _auth.currentUser?.uid;
       if (userId == null) throw Exception('No user logged in');
@@ -55,6 +55,8 @@ class PhotoUtils {
           .child('users')
           .child(userId)
           .child('photos')
+          .orderByChild('source')
+          .equalTo(source)
           .get();
 
       if (snapshot.value == null) return [];
@@ -65,8 +67,8 @@ class PhotoUtils {
       photosMap.forEach((key, value) {
         photos.add(PhotoData(
           id: key,
-          file: value['firebaseUrl'],
-          firebaseUrl: value['firebaseUrl'],
+          file: null,
+          firebaseUrl: value['firebaseUrl'] ?? value['url'],
           title: value['title'] ?? 'Photo Details',
           isLiked: value['isLiked'] ?? false,
           comment: value['comment'] ?? '',

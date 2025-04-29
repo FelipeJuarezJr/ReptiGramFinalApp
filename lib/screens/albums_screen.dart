@@ -11,6 +11,7 @@ import '../state/app_state.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/photo_data.dart';
+import '../utils/photo_utils.dart';
 
 class AlbumsScreen extends StatefulWidget {
   const AlbumsScreen({super.key});
@@ -59,20 +60,22 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
 
         // Sort photos into albums
         data.forEach((key, value) {
-          final photo = PhotoData(
-            id: key,
-            file: null,
-            firebaseUrl: value['url'],
-            title: value['title'] ?? 'Photo Details',
-            comment: value['comment'] ?? '',
-            userId: currentUser.uid,
-            isLiked: false,
-            likesCount: 0,
-          );
-          
-          final albumName = value['albumName'] ?? 'My Album';
-          if (albumPhotos.containsKey(albumName)) {
-            albumPhotos[albumName]!.add(photo);
+          if (value['source'] == 'albums') {  // Filter locally instead of in query
+            final photo = PhotoData(
+              id: key,
+              file: null,
+              firebaseUrl: value['url'],
+              title: value['title'] ?? 'Photo Details',
+              comment: value['comment'] ?? '',
+              userId: currentUser.uid,
+              isLiked: false,
+              likesCount: 0,
+            );
+            
+            final albumName = value['albumName'] ?? 'My Album';
+            if (albumPhotos.containsKey(albumName)) {
+              albumPhotos[albumName]!.add(photo);
+            }
           }
         });
 
@@ -183,6 +186,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                                       'timestamp': ServerValue.timestamp,
                                       'albumName': 'My Album',
                                       'userId': currentUser.uid,
+                                      'source': 'albums',
                                     });
 
                                 // Hide loading indicator

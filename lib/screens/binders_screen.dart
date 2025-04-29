@@ -3,13 +3,16 @@ import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
 import '../screens/notebooks_screen.dart';
+import '../models/photo_data.dart';
 
 class BindersScreen extends StatefulWidget {
   final String albumName;
+  final List<PhotoData>? photos;
 
   const BindersScreen({
     super.key,
     required this.albumName,
+    this.photos,
   });
 
   @override

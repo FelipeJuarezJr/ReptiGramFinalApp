@@ -1,6 +1,10 @@
 {
   "rules": {
     ".read": true,
+    "photos": {
+      ".read": true,
+      ".write": "auth != null"
+    },
     "users": {
       "$userId": {
         ".read": true,

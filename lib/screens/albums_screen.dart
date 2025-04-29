@@ -3,6 +3,14 @@ import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
 import '../screens/binders_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../models/photo_data.dart';
 
 class AlbumsScreen extends StatefulWidget {
   const AlbumsScreen({super.key});
@@ -12,7 +20,70 @@ class AlbumsScreen extends StatefulWidget {
 }
 
 class _AlbumsScreenState extends State<AlbumsScreen> {
-  List<String> albums = ['My Album']; // Initial album, add more as created
+  List<String> albums = ['My Album'];
+  final ImagePicker _picker = ImagePicker();
+  Map<String, List<PhotoData>> albumPhotos = {};
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.initializeUser();
+      _loadAlbumPhotos();
+    });
+  }
+
+  Future<void> _loadAlbumPhotos() async {
+    setState(() => _isLoading = true);
+    try {
+      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      if (currentUser == null) return;
+
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('photos')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        albumPhotos.clear();
+        
+        // Initialize lists for each album
+        for (var album in albums) {
+          albumPhotos[album] = [];
+        }
+
+        // Sort photos into albums
+        data.forEach((key, value) {
+          final photo = PhotoData(
+            id: key,
+            file: null,
+            firebaseUrl: value['url'],
+            title: value['title'] ?? 'Photo Details',
+            comment: value['comment'] ?? '',
+            userId: currentUser.uid,
+            isLiked: false,
+            likesCount: 0,
+          );
+          
+          final albumName = value['albumName'] ?? 'My Album';
+          if (albumPhotos.containsKey(albumName)) {
+            albumPhotos[albumName]!.add(photo);
+          }
+        });
+
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error loading album photos: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +118,89 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                           _buildActionButton(
                             'Add Image',
                             Icons.add_photo_alternate,
-                            () {
-                              // TODO: Navigate to Add Image view
+                            () async {
+                              final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                              print('Debug - Current User: ${currentUser?.uid}');
+                              
+                              if (currentUser == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please log in to upload photos')),
+                                );
+                                return;
+                              }
+
+                              try {
+                                final XFile? pickedFile = await _picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  imageQuality: 85,
+                                );
+
+                                if (pickedFile == null) return;
+
+                                // Show loading indicator
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (BuildContext context) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                );
+
+                                final String photoId = DateTime.now().millisecondsSinceEpoch.toString();
+                                final storageRef = FirebaseStorage.instance
+                                    .ref()
+                                    .child('photos')
+                                    .child(photoId);
+
+                                print('Uploading to path: photos/$photoId');
+
+                                if (kIsWeb) {
+                                  final bytes = await pickedFile.readAsBytes();
+                                  await storageRef.putData(
+                                    bytes,
+                                    SettableMetadata(contentType: 'image/jpeg'),
+                                  );
+                                } else {
+                                  await storageRef.putFile(
+                                    File(pickedFile.path),
+                                    SettableMetadata(contentType: 'image/jpeg'),
+                                  );
+                                }
+
+                                final downloadUrl = await storageRef.getDownloadURL();
+
+                                // Save to Realtime Database with user ID
+                                await FirebaseDatabase.instance
+                                    .ref()
+                                    .child('users')
+                                    .child(currentUser.uid)
+                                    .child('photos')
+                                    .child(photoId)
+                                    .set({
+                                      'url': downloadUrl,
+                                      'timestamp': ServerValue.timestamp,
+                                      'albumName': 'My Album',
+                                      'userId': currentUser.uid,
+                                    });
+
+                                // Hide loading indicator
+                                Navigator.pop(context);
+
+                                // Add this line to reload photos
+                                await _loadAlbumPhotos();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Photo uploaded successfully!')),
+                                );
+                              } catch (e) {
+                                print('Error uploading photo: $e');
+                                Navigator.pop(context); // Hide loading indicator
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to upload photo: ${e.toString()}')),
+                                );
+                              }
                             },
                           ),
                         ],
@@ -56,17 +208,29 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                       const SizedBox(height: 74),
                       // Albums Grid below
                       Expanded(
-                        child: GridView.builder(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          itemCount: albums.length,
-                          itemBuilder: (context, index) {
-                            return _buildAlbumCard(albums[index]);
-                          },
-                        ),
+                        child: _isLoading 
+                          ? const Center(child: CircularProgressIndicator())
+                          : GridView.builder(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,  // 3 items per row
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                childAspectRatio: 0.75,  // Make items slightly taller than wide
+                              ),
+                              itemCount: albums.length + (albumPhotos['My Album']?.length ?? 0),  // Show both albums and photos
+                              itemBuilder: (context, index) {
+                                // First show albums
+                                if (index < albums.length) {
+                                  return _buildAlbumCard(albums[index]);
+                                } 
+                                // Then show photos
+                                else {
+                                  final photoIndex = index - albums.length;
+                                  final photo = albumPhotos['My Album']![photoIndex];
+                                  return _buildPhotoCard(photo);
+                                }
+                              },
+                            ),
                       ),
                     ],
                   ),
@@ -126,45 +290,87 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   }
 
   Widget _buildAlbumCard(String albumName) {
+    final photos = albumPhotos[albumName] ?? [];
+    
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => BindersScreen(albumName: albumName),
+            builder: (context) => BindersScreen(
+              albumName: albumName,
+              photos: photos,
+            ),
           ),
         );
       },
       child: Container(
         decoration: BoxDecoration(
           gradient: AppColors.inputGradient,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+              blurRadius: 3,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.folder,
-              size: 48,
-              color: AppColors.titleText,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              albumName,
-              style: const TextStyle(
-                color: AppColors.titleText,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            if (photos.isNotEmpty && photos.first.firebaseUrl != null)
+              Expanded(
+                flex: 3,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                  child: Image.network(
+                    photos.first.firebaseUrl!,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              )
+            else
+              const Expanded(
+                flex: 3,
+                child: Icon(
+                  Icons.photo_album,
+                  size: 48,
+                  color: AppColors.titleText,
+                ),
               ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
+            Expanded(
+              flex: 1,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      albumName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '${photos.length} photos',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -205,6 +411,28 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoCard(PhotoData photo) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          photo.firebaseUrl!,
+          fit: BoxFit.cover,
         ),
       ),
     );

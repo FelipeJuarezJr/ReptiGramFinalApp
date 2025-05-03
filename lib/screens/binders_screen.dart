@@ -103,32 +103,32 @@ class _BindersScreenState extends State<BindersScreen> {
             children: [
               const TitleHeader(),
               const Header(initialIndex: 1),
-              // Back button row
-              Align(
-                alignment: Alignment.topLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: AppColors.titleText,
-                    ),
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AlbumsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
+                      // Back button row (matches other screens)
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: AppColors.titleText,
+                            ),
+                            onPressed: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AlbumsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 20.0),
                       // Action Buttons at the top
                       Row(

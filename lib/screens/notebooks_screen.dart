@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import '../models/photo_data.dart';
+import '../utils/photo_utils.dart';
 import '../screens/photos_only_screen.dart';
 
 class NotebooksScreen extends StatefulWidget {
@@ -17,7 +26,72 @@ class NotebooksScreen extends StatefulWidget {
 }
 
 class _NotebooksScreenState extends State<NotebooksScreen> {
-  List<String> notebooks = ['Notebook 1']; // Initial notebook
+  List<String> notebooks = ['My Notebook'];
+  final ImagePicker _picker = ImagePicker();
+  Map<String, List<PhotoData>> notebookPhotos = {};
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.initializeUser();
+      _loadNotebookPhotos();
+    });
+  }
+
+  Future<void> _loadNotebookPhotos() async {
+    setState(() => _isLoading = true);
+    try {
+      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      if (currentUser == null) return;
+
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('photos')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        notebookPhotos.clear();
+
+        // Initialize lists for each notebook
+        for (var notebook in notebooks) {
+          notebookPhotos[notebook] = [];
+        }
+
+        // Sort photos into notebooks
+        data.forEach((key, value) {
+          if (value['source'] == 'notebooks') {  // Filter locally
+            final photo = PhotoData(
+              id: key,
+              file: null,
+              firebaseUrl: value['url'],
+              title: value['title'] ?? 'Photo Details',
+              comment: value['comment'] ?? '',
+              userId: currentUser.uid,
+              isLiked: false,
+              likesCount: 0,
+            );
+
+            final notebookName = value['notebookName'] ?? 'My Notebook';
+            if (notebookPhotos.containsKey(notebookName)) {
+              notebookPhotos[notebookName]!.add(photo);
+            }
+          }
+        });
+
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error loading notebook photos: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,23 +111,7 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      // Back button row
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: AppColors.titleText,
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 60.0),
                       // Action Buttons at the top
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -68,35 +126,120 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
                           _buildActionButton(
                             'Add Image',
                             Icons.add_photo_alternate,
-                            () {
-                              // TODO: Navigate to Add Image view
+                            () async {
+                              final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                              print('Debug - Current User: ${currentUser?.uid}');
+
+                              if (currentUser == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please log in to upload photos')),
+                                );
+                                return;
+                              }
+
+                              try {
+                                final XFile? pickedFile = await _picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  imageQuality: 85,
+                                );
+
+                                if (pickedFile == null) return;
+
+                                // Show loading indicator
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (BuildContext context) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                );
+
+                                final String photoId = DateTime.now().millisecondsSinceEpoch.toString();
+                                final storageRef = FirebaseStorage.instance
+                                    .ref()
+                                    .child('photos')
+                                    .child(photoId);
+
+                                print('Uploading to path: photos/$photoId');
+
+                                if (kIsWeb) {
+                                  final bytes = await pickedFile.readAsBytes();
+                                  await storageRef.putData(
+                                    bytes,
+                                    SettableMetadata(contentType: 'image/jpeg'),
+                                  );
+                                } else {
+                                  await storageRef.putFile(
+                                    File(pickedFile.path),
+                                    SettableMetadata(contentType: 'image/jpeg'),
+                                  );
+                                }
+
+                                final downloadUrl = await storageRef.getDownloadURL();
+
+                                // Save to Realtime Database with user ID
+                                await FirebaseDatabase.instance
+                                    .ref()
+                                    .child('users')
+                                    .child(currentUser.uid)
+                                    .child('photos')
+                                    .child(photoId)
+                                    .set({
+                                      'url': downloadUrl,
+                                      'timestamp': ServerValue.timestamp,
+                                      'notebookName': 'My Notebook',
+                                      'userId': currentUser.uid,
+                                      'source': 'notebooks',
+                                    });
+
+                                // Hide loading indicator
+                                Navigator.pop(context);
+
+                                // Add this line to reload photos
+                                await _loadNotebookPhotos();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Photo uploaded successfully!')),
+                                );
+                              } catch (e) {
+                                print('Error uploading photo: $e');
+                                Navigator.pop(context); // Hide loading indicator
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to upload photo: ${e.toString()}')),
+                                );
+                              }
                             },
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        widget.binderName,
-                        style: const TextStyle(
-                          color: AppColors.titleText,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 74),
                       // Notebooks Grid below
                       Expanded(
-                        child: GridView.builder(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          itemCount: notebooks.length,
-                          itemBuilder: (context, index) {
-                            return _buildNotebookCard(notebooks[index]);
-                          },
-                        ),
+                        child: _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : GridView.builder(
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,  // 3 items per row
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 0.75,  // Make items slightly taller than wide
+                                ),
+                                itemCount: notebooks.length + (notebookPhotos['My Notebook']?.length ?? 0),  // Show both notebooks and photos
+                                itemBuilder: (context, index) {
+                                  // First show notebooks
+                                  if (index < notebooks.length) {
+                                    return _buildNotebookCard(notebooks[index]);
+                                  }
+                                  // Then show photos
+                                  else {
+                                    final photoIndex = index - notebooks.length;
+                                    final photo = notebookPhotos['My Notebook']![photoIndex];
+                                    return _buildPhotoCard(photo);
+                                  }
+                                },
+                              ),
                       ),
                     ],
                   ),
@@ -167,12 +310,12 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
       child: Container(
         decoration: BoxDecoration(
           gradient: AppColors.inputGradient,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+              blurRadius: 3,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -180,7 +323,7 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.book,  // Different icon for notebooks
+              Icons.book,
               size: 48,
               color: AppColors.titleText,
             ),
@@ -234,6 +377,28 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoCard(PhotoData photo) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 3,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          photo.firebaseUrl!,
+          fit: BoxFit.cover,
         ),
       ),
     );

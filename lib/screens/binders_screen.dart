@@ -2,25 +2,92 @@ import 'package:flutter/material.dart';
 import '../styles/colors.dart';
 import '../common/header.dart';
 import '../common/title_header.dart';
-import '../screens/notebooks_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/photo_data.dart';
+import '../utils/photo_utils.dart';
+import '../screens/notebooks_screen.dart';
 
 class BindersScreen extends StatefulWidget {
-  final String albumName;
-  final List<PhotoData>? photos;
-
-  const BindersScreen({
-    super.key,
-    required this.albumName,
-    this.photos,
-  });
+  final String binderName;
+  const BindersScreen({super.key, required this.binderName});
 
   @override
   State<BindersScreen> createState() => _BindersScreenState();
 }
 
 class _BindersScreenState extends State<BindersScreen> {
-  List<String> binders = ['Binder 1']; // Initial binder
+  List<String> binders = ['My Binder'];
+  final ImagePicker _picker = ImagePicker();
+  Map<String, List<PhotoData>> binderPhotos = {};
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.initializeUser();
+      _loadBinderPhotos();
+    });
+  }
+
+  Future<void> _loadBinderPhotos() async {
+    setState(() => _isLoading = true);
+    try {
+      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      if (currentUser == null) return;
+
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('photos')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        binderPhotos.clear();
+        
+        // Initialize lists for each binder
+        for (var binder in binders) {
+          binderPhotos[binder] = [];
+        }
+
+        // Sort photos into binders
+        data.forEach((key, value) {
+          if (value['source'] == 'binders') {  // Filter locally
+            final photo = PhotoData(
+              id: key,
+              file: null,
+              firebaseUrl: value['url'],
+              title: value['title'] ?? 'Photo Details',
+              comment: value['comment'] ?? '',
+              userId: currentUser.uid,
+              isLiked: false,
+              likesCount: 0,
+            );
+            
+            final binderName = value['binderName'] ?? 'My Binder';
+            if (binderPhotos.containsKey(binderName)) {
+              binderPhotos[binderName]!.add(photo);
+            }
+          }
+        });
+
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error loading binder photos: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,23 +107,7 @@ class _BindersScreenState extends State<BindersScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      // Back button row
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: AppColors.titleText,
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 60.0),
                       // Action Buttons at the top
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -71,35 +122,120 @@ class _BindersScreenState extends State<BindersScreen> {
                           _buildActionButton(
                             'Add Image',
                             Icons.add_photo_alternate,
-                            () {
-                              // TODO: Navigate to Add Image view
+                            () async {
+                              final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                              print('Debug - Current User: ${currentUser?.uid}');
+                              
+                              if (currentUser == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please log in to upload photos')),
+                                );
+                                return;
+                              }
+
+                              try {
+                                final XFile? pickedFile = await _picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  imageQuality: 85,
+                                );
+
+                                if (pickedFile == null) return;
+
+                                // Show loading indicator
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (BuildContext context) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                );
+
+                                final String photoId = DateTime.now().millisecondsSinceEpoch.toString();
+                                final storageRef = FirebaseStorage.instance
+                                    .ref()
+                                    .child('photos')
+                                    .child(photoId);
+
+                                print('Uploading to path: photos/$photoId');
+
+                                if (kIsWeb) {
+                                  final bytes = await pickedFile.readAsBytes();
+                                  await storageRef.putData(
+                                    bytes,
+                                    SettableMetadata(contentType: 'image/jpeg'),
+                                  );
+                                } else {
+                                  await storageRef.putFile(
+                                    File(pickedFile.path),
+                                    SettableMetadata(contentType: 'image/jpeg'),
+                                  );
+                                }
+
+                                final downloadUrl = await storageRef.getDownloadURL();
+
+                                // Save to Realtime Database with user ID
+                                await FirebaseDatabase.instance
+                                    .ref()
+                                    .child('users')
+                                    .child(currentUser.uid)
+                                    .child('photos')
+                                    .child(photoId)
+                                    .set({
+                                      'url': downloadUrl,
+                                      'timestamp': ServerValue.timestamp,
+                                      'binderName': 'My Binder',
+                                      'userId': currentUser.uid,
+                                      'source': 'binders',
+                                    });
+
+                                // Hide loading indicator
+                                Navigator.pop(context);
+
+                                // Add this line to reload photos
+                                await _loadBinderPhotos();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Photo uploaded successfully!')),
+                                );
+                              } catch (e) {
+                                print('Error uploading photo: $e');
+                                Navigator.pop(context); // Hide loading indicator
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to upload photo: ${e.toString()}')),
+                                );
+                              }
                             },
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        widget.albumName,
-                        style: const TextStyle(
-                          color: AppColors.titleText,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 74),
                       // Binders Grid below
                       Expanded(
-                        child: GridView.builder(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          itemCount: binders.length,
-                          itemBuilder: (context, index) {
-                            return _buildBinderCard(binders[index]);
-                          },
-                        ),
+                        child: _isLoading 
+                          ? const Center(child: CircularProgressIndicator())
+                          : GridView.builder(
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,  // 3 items per row
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                childAspectRatio: 0.75,  // Make items slightly taller than wide
+                              ),
+                              itemCount: binders.length + (binderPhotos['My Binder']?.length ?? 0),  // Show both binders and photos
+                              itemBuilder: (context, index) {
+                                // First show binders
+                                if (index < binders.length) {
+                                  return _buildBinderCard(binders[index]);
+                                } 
+                                // Then show photos
+                                else {
+                                  final photoIndex = index - binders.length;
+                                  final photo = binderPhotos['My Binder']![photoIndex];
+                                  return _buildPhotoCard(photo);
+                                }
+                              },
+                            ),
                       ),
                     ],
                   ),
@@ -113,6 +249,7 @@ class _BindersScreenState extends State<BindersScreen> {
   }
 
   void _createNewBinder() {
+    // Show dialog to enter binder name
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -157,6 +294,53 @@ class _BindersScreenState extends State<BindersScreen> {
     );
   }
 
+  Widget _buildBinderCard(String binderName) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NotebooksScreen(binderName: binderName),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.inputGradient,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 3,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.folder,
+              size: 48,
+              color: AppColors.titleText,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              binderName,
+              style: const TextStyle(
+                color: AppColors.titleText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButton(String title, IconData icon, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
@@ -195,48 +379,23 @@ class _BindersScreenState extends State<BindersScreen> {
     );
   }
 
-  Widget _buildBinderCard(String binderName) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NotebooksScreen(binderName: binderName),
+  Widget _buildPhotoCard(PhotoData photo) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 3,
+            offset: const Offset(0, 2),
           ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.inputGradient,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.folder_special,
-              size: 48,
-              color: AppColors.titleText,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              binderName,
-              style: const TextStyle(
-                color: AppColors.titleText,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          photo.firebaseUrl!,
+          fit: BoxFit.cover,
         ),
       ),
     );

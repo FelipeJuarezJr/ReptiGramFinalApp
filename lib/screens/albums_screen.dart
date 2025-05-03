@@ -300,7 +300,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => BindersScreen(
-              albumName: albumName,
+              binderName: albumName,
             ),
           ),
         );

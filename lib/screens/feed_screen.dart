@@ -75,12 +75,12 @@ class _FeedScreenState extends State<FeedScreen> {
             final photo = PhotoData(
               id: photoId.toString(),
               file: null,
-              firebaseUrl: photoData['firebaseUrl'],
+              firebaseUrl: photoData['firebaseUrl'] ?? photoData['url'],
               title: photoData['title'] ?? 'Untitled',
               comment: photoData['comment'] ?? '',
               isLiked: isLiked,
               userId: userId,
-              timestamp: timestamp,  // Use the corrected timestamp
+              timestamp: timestamp,
               likesCount: photoLikes.length,
             );
             allPhotos.add(photo);

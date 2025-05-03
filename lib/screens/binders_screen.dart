@@ -129,7 +129,7 @@ class _BindersScreenState extends State<BindersScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      const SizedBox(height: 60.0),
+                      const SizedBox(height: 20.0),
                       // Action Buttons at the top
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

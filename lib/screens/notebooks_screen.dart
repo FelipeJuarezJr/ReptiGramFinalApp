@@ -127,14 +127,14 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AlbumsScreen(),
+                                  builder: (context) => BindersScreen(binderName: widget.binderName),
                                 ),
                               );
                             },
                           ),
                         ),
                       ),
-                      const SizedBox(height: 60.0),
+                      const SizedBox(height: 20.0),
                       // Action Buttons at the top
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

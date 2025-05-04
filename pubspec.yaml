@@ -37,4 +37,4 @@ flutter:
     - assets/img/brands/google_g.png
     - assets/img/brands/google_g.svg
     - assets/img/reptiGramLogo.png
-    - .env
+    # - .env

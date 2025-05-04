@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="ReptiGram - A Social Network for Reptile Enthusiasts">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="auth_app">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>ReptiGram - A thriving hub for reptile lovers to connect, learn, and trade</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Add this meta tag inside the head section -->
+  <meta name="google-signin-client_id" content="1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com">
+
+  <!-- Remove Firebase SDK manually loaded scripts -->
+  <!-- No need to include the Firebase SDK here -->
+
+  <!-- Initialize Firebase inside your Flutter app (via firebase_core) -->
+
+  <script>
+    window.addEventListener('load', function(ev) {
+      // This should not reference _flutter directly.
+      // Flutter Web's engine is auto-initialized by Flutter.
+      // The engine will be loaded and initialized via Flutter's main.dart.js.
+    });
+  </script>
+</head>
+<body>
+  <!-- Only this script is needed to load your Flutter Web app -->
+  <script src="main.dart.js" type="application/javascript"></script>
+</body>
+</html>

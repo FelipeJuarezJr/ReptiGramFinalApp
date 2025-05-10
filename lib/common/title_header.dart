@@ -78,25 +78,26 @@ class TitleHeader extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: IconButton(
-              icon: const Icon(
-                Icons.logout,
-                color: AppColors.titleText,
-              ),
-              onPressed: () {
-                FirebaseAuth.instance.signOut();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
-                  (route) => false,
-                );
-              },
-            ),
-          ),
+          // TODO: Just uncomment this when you want to add a logout button
+          // Padding(
+          //   padding: const EdgeInsets.only(right: 16.0),
+          //   child: IconButton(
+          //     icon: const Icon(
+          //       Icons.logout,
+          //       color: AppColors.titleText,
+          //     ),
+          //     onPressed: () {
+          //       FirebaseAuth.instance.signOut();
+          //       Navigator.pushAndRemoveUntil(
+          //         context,
+          //         MaterialPageRoute(
+          //           builder: (context) => const LoginScreen(),
+          //         ),
+          //         (route) => false,
+          //       );
+          //     },
+          //   ),
+          // ),
         ],
       ),
     );

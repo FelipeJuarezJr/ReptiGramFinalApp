@@ -287,6 +287,12 @@ class _BindersScreenState extends State<BindersScreen> {
             decoration: const InputDecoration(
               hintText: 'Enter binder name',
               hintStyle: TextStyle(color: Colors.grey),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.brown),
+              ),
             ),
             onChanged: (value) {
               newBinderName = value;
@@ -298,6 +304,9 @@ class _BindersScreenState extends State<BindersScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
             ),
             TextButton(
               child: const Text('Create'),
@@ -309,6 +318,9 @@ class _BindersScreenState extends State<BindersScreen> {
                   Navigator.of(context).pop();
                 }
               },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
             ),
           ],
         );

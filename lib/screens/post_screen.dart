@@ -219,11 +219,21 @@ class _PostScreenState extends State<PostScreen> {
               children: [
                 TextField(
                   controller: commentController,
+                  style: TextStyle(color: Colors.brown),
                   decoration: InputDecoration(
                     hintText: 'Write a comment...',
                     hintStyle: TextStyle(color: Colors.grey[400]),
                     border: OutlineInputBorder(
                       borderRadius: AppColors.pillShape,
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppColors.pillShape,
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: AppColors.pillShape,
+                      borderSide: BorderSide(color: Colors.brown),
                     ),
                   ),
                   maxLines: 3,
@@ -289,6 +299,9 @@ class _PostScreenState extends State<PostScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.brown,
+            ),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -299,7 +312,8 @@ class _PostScreenState extends State<PostScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.brown,
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.brown,
             ),
             child: const Text('Comment'),
           ),

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary gradient colors
-  static const Color gradientStart = Color(0xFFffa428); // top left
-  static const Color gradientEnd = Color(0xFF9c3936);   // bottom right
+  // Original R Primary gradient colors
+  // static const Color gradientStart = Color(0xFFffa428); // top left
+  // static const Color gradientEnd = Color(0xFF9c3936);   // bottom right
+  static const Color gradientStart = Color(0xFFFFDE59); // top left
+  static const Color gradientEnd = Color(0xFFFF914D);   // bottom right
+
 
   // Text colors
-  static const Color titleText = Color(0xFFf6e29b);     // Gold text for title and links
+  static const Color logoTitleText = Color(0xFFf6e29b);     // Gold text for title and links
+  static const Color titleText = Color(0xFF9c3936);     // Gold text for title and links
   static const Color titleShadow = Color(0xFF4a3414);   // Brown shadow
   static const Color buttonText = Color(0xFFd3d5e4);    // Light gray-blue for button text
 
@@ -129,5 +133,5 @@ class AppColors {
     boxShadow: innerTopShadow,
   );
 
-  static const Color dialogBackground = Color(0xFF2C1810);
+  static const Color dialogBackground = Color(0xFFFFFFFF);
 }

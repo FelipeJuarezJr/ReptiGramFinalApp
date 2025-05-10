@@ -264,6 +264,12 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
             decoration: const InputDecoration(
               hintText: 'Enter album name',
               hintStyle: TextStyle(color: Colors.grey),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.brown),
+              ),
             ),
             onChanged: (value) {
               newAlbumName = value;
@@ -275,6 +281,9 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
             ),
             TextButton(
               child: const Text('Create'),
@@ -286,6 +295,9 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                   Navigator.of(context).pop();
                 }
               },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
             ),
           ],
         );

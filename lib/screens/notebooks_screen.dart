@@ -291,6 +291,12 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
             decoration: const InputDecoration(
               hintText: 'Enter notebook name',
               hintStyle: TextStyle(color: Colors.grey),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.brown),
+              ),
             ),
             onChanged: (value) {
               newNotebookName = value;
@@ -302,6 +308,9 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
             ),
             TextButton(
               child: const Text('Create'),
@@ -313,6 +322,9 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
                   Navigator.of(context).pop();
                 }
               },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
             ),
           ],
         );

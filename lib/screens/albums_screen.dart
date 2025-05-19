@@ -32,8 +32,37 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
     Future.microtask(() async {
       final appState = Provider.of<AppState>(context, listen: false);
       await appState.initializeUser();
+      _loadAlbums();
       _loadAlbumPhotos();
     });
+  }
+
+  Future<void> _loadAlbums() async {
+    try {
+      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      if (currentUser == null) return;
+
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('albums')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          albums = ['My Album']; // Reset to default album
+          data.forEach((key, value) {
+            if (value['name'] != null) {
+              albums.add(value['name']);
+            }
+          });
+        });
+      }
+    } catch (e) {
+      print('Error loading albums: $e');
+    }
   }
 
   Future<void> _loadAlbumPhotos() async {
@@ -248,7 +277,6 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   }
 
   void _createNewAlbum() {
-    // Show dialog to enter album name
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -287,12 +315,49 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
             ),
             TextButton(
               child: const Text('Create'),
-              onPressed: () {
+              onPressed: () async {
                 if (newAlbumName.isNotEmpty) {
-                  setState(() {
-                    albums.add(newAlbumName);
-                  });
-                  Navigator.of(context).pop();
+                  try {
+                    final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                    if (currentUser == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please log in to create albums')),
+                      );
+                      return;
+                    }
+
+                    // Create a unique ID for the album
+                    final albumId = DateTime.now().millisecondsSinceEpoch.toString();
+
+                    // Save to Firebase
+                    await FirebaseDatabase.instance
+                        .ref()
+                        .child('users')
+                        .child(currentUser.uid)
+                        .child('albums')
+                        .child(albumId)
+                        .set({
+                          'name': newAlbumName,
+                          'createdAt': ServerValue.timestamp,
+                          'userId': currentUser.uid,
+                        });
+
+                    // Update local state
+                    setState(() {
+                      albums.add(newAlbumName);
+                    });
+
+                    Navigator.of(context).pop();
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Album created successfully!')),
+                    );
+                  } catch (e) {
+                    print('Error creating album: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to create album: ${e.toString()}')),
+                    );
+                  }
                 }
               },
               style: TextButton.styleFrom(

@@ -387,6 +387,40 @@ class _PostScreenState extends State<PostScreen> {
     }
   }
 
+  Future<void> _loadUsernames() async {
+    try {
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        data.forEach((userId, userData) {
+          if (userData is Map) {
+            // First try to get username from the root level
+            String? username = userData['username'];
+            
+            // If not found, try to get it from the profile
+            if (username == null && userData['profile'] is Map) {
+              final profile = userData['profile'];
+              username = profile['username'] ?? 
+                         profile['displayName'] ?? 
+                         'Unknown User';
+            }
+            
+            // If still not found, use Unknown User
+            _usernames[userId] = username ?? 'Unknown User';
+            print('Loaded username for $userId: ${_usernames[userId]}'); // Debug print
+          }
+        });
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error loading usernames: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;

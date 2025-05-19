@@ -55,14 +55,12 @@ class _BindersScreenState extends State<BindersScreen> {
         final data = snapshot.value as Map<dynamic, dynamic>;
         binderPhotos.clear();
         
-        // Initialize lists for each binder
-        for (var binder in binders) {
-          binderPhotos[binder] = [];
-        }
+        // Initialize the current binder's photo list
+        binderPhotos[widget.binderName] = [];
 
         // Sort photos into binders
         data.forEach((key, value) {
-          if (value['source'] == 'binders') {  // Filter locally
+          if (value['source'] == 'binders' && value['binderName'] == widget.binderName) {
             final photo = PhotoData(
               id: key,
               file: null,
@@ -74,10 +72,7 @@ class _BindersScreenState extends State<BindersScreen> {
               likesCount: 0,
             );
             
-            final binderName = value['binderName'] ?? 'My Binder';
-            if (binderPhotos.containsKey(binderName)) {
-              binderPhotos[binderName]!.add(photo);
-            }
+            binderPhotos[widget.binderName]!.add(photo);
           }
         });
 
@@ -146,8 +141,6 @@ class _BindersScreenState extends State<BindersScreen> {
                             Icons.add_photo_alternate,
                             () async {
                               final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
-                              print('Debug - Current User: ${currentUser?.uid}');
-                              
                               if (currentUser == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Please log in to upload photos')),
@@ -163,7 +156,6 @@ class _BindersScreenState extends State<BindersScreen> {
 
                                 if (pickedFile == null) return;
 
-                                // Show loading indicator
                                 showDialog(
                                   context: context,
                                   barrierDismissible: false,
@@ -180,8 +172,6 @@ class _BindersScreenState extends State<BindersScreen> {
                                     .child('photos')
                                     .child(photoId);
 
-                                print('Uploading to path: photos/$photoId');
-
                                 if (kIsWeb) {
                                   final bytes = await pickedFile.readAsBytes();
                                   await storageRef.putData(
@@ -197,7 +187,18 @@ class _BindersScreenState extends State<BindersScreen> {
 
                                 final downloadUrl = await storageRef.getDownloadURL();
 
-                                // Save to Realtime Database with user ID
+                                // Get user's display name
+                                final userSnapshot = await FirebaseDatabase.instance
+                                    .ref()
+                                    .child('users')
+                                    .child(currentUser.uid)
+                                    .child('profile')
+                                    .get();
+                                
+                                final userData = userSnapshot.value as Map<dynamic, dynamic>?;
+                                final displayName = userData?['displayName'] ?? currentUser.displayName ?? 'Unknown User';
+
+                                // Save to Realtime Database with user info
                                 await FirebaseDatabase.instance
                                     .ref()
                                     .child('users')
@@ -207,23 +208,21 @@ class _BindersScreenState extends State<BindersScreen> {
                                     .set({
                                       'url': downloadUrl,
                                       'timestamp': ServerValue.timestamp,
-                                      'binderName': 'My Binder',
+                                      'binderName': widget.binderName,
                                       'userId': currentUser.uid,
+                                      'userDisplayName': displayName,  // Add display name
                                       'source': 'binders',
                                     });
 
-                                // Hide loading indicator
-                                Navigator.pop(context);
-
-                                // Add this line to reload photos
-                                await _loadBinderPhotos();
+                                Navigator.pop(context); // Hide loading indicator
+                                await _loadBinderPhotos(); // Reload photos
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Photo uploaded successfully!')),
                                 );
                               } catch (e) {
                                 print('Error uploading photo: $e');
-                                Navigator.pop(context); // Hide loading indicator
+                                Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Failed to upload photo: ${e.toString()}')),
                                 );
@@ -239,23 +238,15 @@ class _BindersScreenState extends State<BindersScreen> {
                           ? const Center(child: CircularProgressIndicator())
                           : GridView.builder(
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,  // 3 items per row
+                                crossAxisCount: 3,
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
-                                childAspectRatio: 0.75,  // Make items slightly taller than wide
+                                childAspectRatio: 0.75,
                               ),
-                              itemCount: binders.length + (binderPhotos['My Binder']?.length ?? 0),  // Show both binders and photos
+                              itemCount: binderPhotos[widget.binderName]?.length ?? 0,
                               itemBuilder: (context, index) {
-                                // First show binders
-                                if (index < binders.length) {
-                                  return _buildBinderCard(binders[index]);
-                                } 
-                                // Then show photos
-                                else {
-                                  final photoIndex = index - binders.length;
-                                  final photo = binderPhotos['My Binder']![photoIndex];
-                                  return _buildPhotoCard(photo);
-                                }
+                                final photo = binderPhotos[widget.binderName]![index];
+                                return _buildPhotoCard(photo);
                               },
                             ),
                       ),

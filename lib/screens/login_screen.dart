@@ -30,30 +30,40 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        print('Google Sign In was canceled by user');
+        return;
+      }
 
+      print('Google Sign In successful: ${googleUser.email}');
+      
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      print('Got Google credentials, signing in to Firebase...');
+      
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      print('Firebase sign in successful: ${userCredential.user?.email}');
       
       if (mounted) {
-        // Navigate to PostScreen after successful Google Sign In
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const PostScreen(),
+            builder: (context) => PostScreen(shouldLoadPosts: true),
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to sign in with Google')),
-      );
+      print('Google Sign In error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to sign in with Google: ${e.toString()}')),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -207,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       child: const Text(
                                         'Login',
                                         style: TextStyle(
-                                          color: AppColors.buttonText,
+                                          color: Colors.white,
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                         ),

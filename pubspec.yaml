@@ -1,5 +1,5 @@
-name: auth_app
-description: A Flutter authentication app.
+name: ReptiGram
+description: A thriving hub for reptile lovers to connect, learn, and trade
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -16,7 +16,8 @@ dependencies:
   firebase_auth: ^4.6.2
   firebase_storage: ^11.2.2
   firebase_database: ^10.2.2
-  google_sign_in: ^6.1.0
+  google_sign_in: ^6.3.0
+  google_sign_in_web: ^0.12.4
   flutter_svg: ^2.0.9
   image_picker: ^0.8.7
   cached_network_image: ^3.2.3

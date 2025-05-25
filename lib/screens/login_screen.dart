@@ -262,7 +262,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Center(
                           child: GoogleSignInButton(
-                            onPressed: _handleGoogleSignIn,
+                            onSignedIn: () {
+                              // Handle post-sign-in logic, e.g. navigate to home
+                              Navigator.pushReplacementNamed(context, '/home');
+                            },
                           ),
                         ),
                         TextButton(

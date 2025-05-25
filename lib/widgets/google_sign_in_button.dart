@@ -1,47 +1,32 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_sign_in_web/google_sign_in_web.dart';
+import 'package:google_sign_in_platform_interface/google_sign_in_platform_interface.dart';
+import '../services/auth_service.dart';
 
-class GoogleSignInButton extends StatelessWidget {
-  final VoidCallback onPressed;
+class GoogleSignInButton extends StatefulWidget {
+  final void Function()? onSignedIn;
 
-  const GoogleSignInButton({
-    super.key,
-    required this.onPressed,
-  });
+  const GoogleSignInButton({Key? key, this.onSignedIn}) : super(key: key);
+
+  @override
+  State<GoogleSignInButton> createState() => _GoogleSignInButtonState();
+}
+
+class _GoogleSignInButtonState extends State<GoogleSignInButton> {
+  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      elevation: 1,
-      borderRadius: BorderRadius.circular(4),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SvgPicture.asset(
-                'assets/img/brands/google_g.svg',
-                height: 24,
-                width: 24,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Sign in with Google',
-                style: TextStyle(
-                  color: Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.g_mobiledata),
+      label: const Text('Sign in with Google'),
+      onPressed: () async {
+        final user = await _authService.signInWithGoogle();
+        if (user != null && widget.onSignedIn != null) {
+          widget.onSignedIn!();
+        }
+      },
     );
   }
 }

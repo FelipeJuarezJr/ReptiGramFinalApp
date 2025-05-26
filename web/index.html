@@ -1,69 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="ReptiGram - A Social Network for Reptile Enthusiasts">
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="description" content="ReptiGram - A Social Network for Reptile Enthusiasts" />
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="auth_app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="auth_app" />
+  <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <title>ReptiGram - Reptile Lovers Hub</title>
+  <link rel="manifest" href="manifest.json" />
+  
+  <meta name="google-signin-client_id" content="1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com" />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>ReptiGram - A thriving hub for reptile lovers to connect, learn, and trade</title>
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Add this meta tag inside the head section -->
-  <meta name="google-signin-client_id" content="1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com">
+  <!-- Google Platform -->
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
 
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-analytics.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
 
-  <!-- Initialize Firebase -->
-  <script src="firebase-config.js"></script>
   <script>
-    firebase.initializeApp(firebaseConfig);
-    firebase.analytics();
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBf2rv_asH86gY2fEGY4yUw4NJYRr5nfnw",
+      authDomain: "reptigram-lite.firebaseapp.com",
+      projectId: "reptigram-lite",
+      storageBucket: "reptigram-lite.firebasestorage.app",
+      messagingSenderId: "1023144692222",
+      appId: "1:1023144692222:web:a2f83e6788f1e0293018af",
+      measurementId: "G-XHBMWC2VD6",
+      databaseURL: "https://reptigram-lite-default-rtdb.firebaseio.com"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
   </script>
 
   <script>
+    // The value below is injected by flutter build, do not touch.
+    const serviceWorkerVersion = null;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+</head>
+<body>
+  <script>
     window.addEventListener('load', function(ev) {
-      _flutter.loader.load({
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: async function(engineInitializer) {
+          const appRunner = await engineInitializer.initializeEngine();
+          await appRunner.runApp();
         }
-      }).then(function(engineInitializer) {
-        return engineInitializer.initializeEngine();
-      }).then(function(appRunner) {
-        return appRunner.runApp();
       });
     });
   </script>
-</head>
-<body>
-  <script src="main.dart.js" type="application/javascript"></script>
 </body>
 </html>

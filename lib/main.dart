@@ -1,34 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
-import 'firebase_options.dart';
 import 'state/app_state.dart';
 import 'state/auth_state.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  try {
-    await dotenv.load();
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('Firebase initialized successfully');
-  } catch (e) {
-    print('Error during initialization: $e');
-  }
-  
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthState()),
-        ChangeNotifierProvider(create: (_) => AppState()),
-      ],
-      child: const MyApp(),
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyBf2rv_asH86gY2fEGY4yUw4NJYRr5nfnw",
+      authDomain: "reptigram-lite.firebaseapp.com",
+      projectId: "reptigram-lite",
+      storageBucket: "reptigram-lite.firebasestorage.app",
+      messagingSenderId: "1023144692222",
+      appId: "1:1023144692222:web:a2f83e6788f1e0293018af",
+      measurementId: "G-XHBMWC2VD6",
+      databaseURL: "https://reptigram-lite-default-rtdb.firebaseio.com"
     ),
   );
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -36,14 +29,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'ReptiGram',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppState()),
+        ChangeNotifierProvider(create: (_) => AuthState()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'ReptiGram',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+        ),
+        home: const LoginScreen(),
       ),
-      home: const LoginScreen(),
     );
   }
 } 

@@ -27,60 +27,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleGoogleSignIn() async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
 
-      // First try silent sign in
-      GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
-      
-      // If silent sign in fails, show the sign in dialog
-      if (googleUser == null) {
-        googleUser = await _googleSignIn.signIn();
-      }
+      final userCredential = await _googleSignIn.signIn();
+      if (userCredential == null) return;
 
-      if (googleUser == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final googleAuth = await userCredential.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      final User? user = userCredential.user;
+      final result = await FirebaseAuth.instance.signInWithCredential(credential);
+      final user = result.user;
 
       if (user != null) {
-        // Get the display name from Google account
-        String displayName = user.displayName ?? 'Unknown User';
-        
-        // Save user profile data to Realtime Database
-        final userRef = FirebaseDatabase.instance
-            .ref()
-            .child('users')
-            .child(user.uid);
-
-        // First save the profile data
-        await userRef.child('profile').set({
-          'username': displayName,
-          'displayName': displayName,
-          'email': user.email,
-          'photoURL': user.photoURL,
-          'lastLogin': ServerValue.timestamp,
-        });
-
-        // Then save the username separately for compatibility
-        await userRef.child('username').set(displayName);
-
-        // Update AppState
-        final appState = Provider.of<AppState>(context, listen: false);
-        await appState.initializeUser();
-
+        // Update database and navigate
+        await _updateUserData(user);
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -91,19 +54,33 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      print('Error during Google sign in: $e');
+      print('Google sign in error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to sign in with Google: ${e.toString()}')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _updateUserData(User user) async {
+    final userRef = FirebaseDatabase.instance
+        .ref()
+        .child('users')
+        .child(user.uid);
+
+    await userRef.update({
+      'email': user.email,
+      'displayName': user.displayName,
+      'photoURL': user.photoURL,
+      'lastLogin': ServerValue.timestamp,
+    });
+
+    // Update AppState
+    final appState = Provider.of<AppState>(context, listen: false);
+    await appState.initializeUser();
   }
 
   Future<void> _handleLogin() async {

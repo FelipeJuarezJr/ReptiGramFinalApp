@@ -43,6 +43,15 @@
     // Initialize Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+
+    // Add Google Sign-In initialization
+    window.onload = function() {
+      gapi.load('auth2', function() {
+        gapi.auth2.init({
+          client_id: '1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com'
+        });
+      });
+    };
   </script>
 
   <script>

@@ -17,10 +17,7 @@
   
   <meta name="google-signin-client_id" content="1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com" />
 
-  <!-- Google Platform -->
-  <script src="https://apis.google.com/js/platform.js" async defer></script>
-
-  <!-- Firebase SDK -->
+   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
@@ -43,15 +40,6 @@
     // Initialize Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-
-    // Add Google Sign-In initialization
-    window.onload = function() {
-      gapi.load('auth2', function() {
-        gapi.auth2.init({
-          client_id: '1023144692222-esbccs6kiu7d5qtnq4vp502cms2sq9hb.apps.googleusercontent.com'
-        });
-      });
-    };
   </script>
 
   <script>

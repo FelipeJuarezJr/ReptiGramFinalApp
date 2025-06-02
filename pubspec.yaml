@@ -35,6 +35,7 @@ flutter:
   # Remove the non-existent asset directories
   assets:
     - assets/img/reptiGramLogo.png
+    - assets/img/google_logo.png
 
   #   - assets/images/
   #   - assets/icons/

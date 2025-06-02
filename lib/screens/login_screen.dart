@@ -1,11 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'register_screen.dart';
-import '../widgets/google_sign_in_button.dart';
+import '../widgets/google_sign_in_button.dart';  // You might replace this with your inline button if you want
 import '../styles/colors.dart';
 import '../screens/post_screen.dart';
-import 'post_screen.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -21,63 +21,46 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
   bool _isLoading = false;
-  final _googleSignIn = GoogleSignIn();
-  final _auth = FirebaseAuth.instance;
 
   Future<void> _handleGoogleSignIn() async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
 
-      // First try silent sign in
-      GoogleSignInAccount? googleUser = await _googleSignIn.signInSilently();
-      
-      // If silent sign in fails, show the sign in dialog
-      if (googleUser == null) {
-        googleUser = await _googleSignIn.signIn();
+      User? user;
+
+      if (kIsWeb) {
+        // Web sign-in flow
+        final googleProvider = GoogleAuthProvider();
+        final userCredential = await _auth.signInWithPopup(googleProvider);
+        user = userCredential.user;
+      } else {
+        // Mobile sign-in flow
+        final googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          setState(() => _isLoading = false);
+          return; // user aborted sign in
+        }
+
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        final userCredential = await _auth.signInWithCredential(credential);
+        user = userCredential.user;
       }
-
-      if (googleUser == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      final User? user = userCredential.user;
 
       if (user != null) {
-        // Get the display name from Google account
-        String displayName = user.displayName ?? 'Unknown User';
-        
-        // Save user profile data to Realtime Database
-        final userRef = FirebaseDatabase.instance
-            .ref()
-            .child('users')
-            .child(user.uid);
+        // Update user data in Realtime Database
+        await _updateUserData(user);
 
-        // First save the profile data
-        await userRef.child('profile').set({
-          'username': displayName,
-          'displayName': displayName,
-          'email': user.email,
-          'photoURL': user.photoURL,
-          'lastLogin': ServerValue.timestamp,
-        });
-
-        // Then save the username separately for compatibility
-        await userRef.child('username').set(displayName);
-
-        // Update AppState
+        // Update AppState or other state management if needed
         final appState = Provider.of<AppState>(context, listen: false);
         await appState.initializeUser();
 
@@ -91,32 +74,39 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      print('Error during Google sign in: $e');
+      debugPrint('Google sign-in error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to sign in with Google: ${e.toString()}')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  Future<void> _updateUserData(User user) async {
+    final ref = FirebaseDatabase.instance.ref("users/${user.uid}");
+    await ref.update({
+      "displayName": user.displayName,
+      "email": user.email,
+      "photoURL": user.photoURL,
+      "lastLogin": ServerValue.timestamp,
+    });
+  }
+
   Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
     try {
       setState(() => _isLoading = true);
 
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       if (mounted) {
-        // Navigate to post screen and trigger post loading
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -124,14 +114,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       String message = 'An error occurred';
-      if (e is FirebaseAuthException) {
-        if (e.code == 'user-not-found') {
-          message = 'No user found for that email.';
-        } else if (e.code == 'wrong-password') {
-          message = 'Wrong password provided.';
-        }
+      if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password provided.';
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -139,9 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -260,13 +246,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                         const SizedBox(height: 16),
+                        // Google Sign In Button - using your new _handleGoogleSignIn
                         Center(
-                          child: GoogleSignInButton(
-                            onSignedIn: () {
-                              // Handle post-sign-in logic, e.g. navigate to home
-                              Navigator.pushReplacementNamed(context, '/home');
-                            },
-                          ),
+                          child: _isLoading
+                              ? const SizedBox() // don't show button while loading
+                              : ElevatedButton.icon(
+                                  onPressed: _handleGoogleSignIn,
+                                  icon: Image.asset('assets/img/google_logo.png', height: 24),
+                                  label: const Text('Sign in with Google'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.black87,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 20),
+                                  ),
+                                ),
                         ),
                         TextButton(
                           onPressed: () {
@@ -302,4 +296,4 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-} 
+}

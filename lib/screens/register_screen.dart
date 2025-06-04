@@ -131,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 20),
                   Center(
                     child: Image.asset(
                       'assets/img/reptiGramLogo.png',

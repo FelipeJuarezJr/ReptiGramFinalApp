@@ -138,152 +138,160 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: const BoxDecoration(
           gradient: AppColors.mainGradient,
         ),
+        width: double.infinity,
+        height: double.infinity,
         child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 60),
-              Center(
-                child: Image.asset(
-                  'assets/img/reptiGramLogo.png',
-                  height: 220,
-                ),
+          child: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'ReptiGram',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.logoTitleText,
-                  shadows: [
-                    Shadow(
-                      color: AppColors.titleShadow,
-                      offset: Offset(2, 2),
-                      blurRadius: 4,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 60),
+                  Center(
+                    child: Image.asset(
+                      'assets/img/reptiGramLogo.png',
+                      height: 220,
                     ),
-                  ],
-                  letterSpacing: 2,
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: AppColors.inputGradient,
-                            borderRadius: AppColors.pillShape,
-                          ),
-                          child: TextFormField(
-                            controller: _emailController,
-                            decoration: InputDecoration(
-                              hintText: 'Email',
-                              hintStyle: const TextStyle(
-                                color: Colors.brown,
-                              ),
-                            ).applyDefaults(AppColors.inputDecorationTheme),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              return null;
-                            },
-                          ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'ReptiGram',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.logoTitleText,
+                      shadows: [
+                        Shadow(
+                          color: AppColors.titleShadow,
+                          offset: Offset(2, 2),
+                          blurRadius: 4,
                         ),
-                        const SizedBox(height: 16),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: AppColors.inputGradient,
-                            borderRadius: AppColors.pillShape,
+                      ],
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: AppColors.inputGradient,
+                              borderRadius: AppColors.pillShape,
+                            ),
+                            child: TextFormField(
+                              controller: _emailController,
+                              decoration: InputDecoration(
+                                hintText: 'Email',
+                                hintStyle: const TextStyle(
+                                  color: Colors.brown,
+                                ),
+                              ).applyDefaults(AppColors.inputDecorationTheme),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your email';
+                                }
+                                return null;
+                              },
+                            ),
                           ),
-                          child: TextFormField(
-                            controller: _passwordController,
-                            decoration: InputDecoration(
-                              hintText: 'Password',
-                              hintStyle: const TextStyle(
-                                color: Colors.brown,
-                              ),
-                            ).applyDefaults(AppColors.inputDecorationTheme),
-                            obscureText: true,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
-                              }
-                              return null;
-                            },
+                          const SizedBox(height: 16),
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: AppColors.inputGradient,
+                              borderRadius: AppColors.pillShape,
+                            ),
+                            child: TextFormField(
+                              controller: _passwordController,
+                              decoration: InputDecoration(
+                                hintText: 'Password',
+                                hintStyle: const TextStyle(
+                                  color: Colors.brown,
+                                ),
+                              ).applyDefaults(AppColors.inputDecorationTheme),
+                              obscureText: true,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your password';
+                                }
+                                return null;
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        _isLoading
-                            ? const CircularProgressIndicator()
-                            : Container(
-                                width: MediaQuery.of(context).size.width * 0.5,
-                                child: ElevatedButton(
-                                  onPressed: _handleLogin,
-                                  style: AppColors.pillButtonStyle,
-                                  child: Ink(
-                                    decoration: BoxDecoration(
-                                      gradient: AppColors.loginGradient,
-                                      borderRadius: AppColors.pillShape,
-                                    ),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      alignment: Alignment.center,
-                                      child: const Text(
-                                        'Login',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                          const SizedBox(height: 24),
+                          _isLoading
+                              ? const CircularProgressIndicator()
+                              : Container(
+                                  width: MediaQuery.of(context).size.width * 0.5,
+                                  child: ElevatedButton(
+                                    onPressed: _handleLogin,
+                                    style: AppColors.pillButtonStyle,
+                                    child: Ink(
+                                      decoration: BoxDecoration(
+                                        gradient: AppColors.loginGradient,
+                                        borderRadius: AppColors.pillShape,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        alignment: Alignment.center,
+                                        child: const Text(
+                                          'Login',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                        const SizedBox(height: 16),
-                        // Google Sign In Button - using your new _handleGoogleSignIn
-                        Center(
-                          child: _isLoading
-                              ? const SizedBox() // don't show button while loading
-                              : ElevatedButton.icon(
-                                  onPressed: _handleGoogleSignIn,
-                                  icon: Image.asset('assets/img/google_logo.png', height: 24),
-                                  label: const Text('Sign in with Google'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.white,
-                                    foregroundColor: Colors.black87,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12, horizontal: 20),
+                          const SizedBox(height: 16),
+                          // Google Sign In Button - using your new _handleGoogleSignIn
+                          Center(
+                            child: _isLoading
+                                ? const SizedBox() // don't show button while loading
+                                : ElevatedButton.icon(
+                                    onPressed: _handleGoogleSignIn,
+                                    icon: Image.asset('assets/img/google_logo.png', height: 24),
+                                    label: const Text('Sign in with Google'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black87,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 12, horizontal: 20),
+                                    ),
                                   ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RegisterScreen(),
                                 ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegisterScreen(),
+                              );
+                            },
+                            child: const Text(
+                              'Don\'t have an account? Register',
+                              style: TextStyle(
+                                color: AppColors.titleText,
                               ),
-                            );
-                          },
-                          child: const Text(
-                            'Don\'t have an account? Register',
-                            style: TextStyle(
-                              color: AppColors.titleText,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

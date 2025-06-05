@@ -89,7 +89,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
 
         // Sort photos into albums
         data.forEach((key, value) {
-          if (value['source'] == 'albums') {  // Filter locally instead of in query
+          if (value['source'] == 'albums') {
             final photo = PhotoData(
               id: key,
               file: null,
@@ -152,8 +152,6 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                             Icons.add_photo_alternate,
                             () async {
                               final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
-                              print('Debug - Current User: ${currentUser?.uid}');
-                              
                               if (currentUser == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Please log in to upload photos')),
@@ -169,7 +167,6 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
 
                                 if (pickedFile == null) return;
 
-                                // Show loading indicator
                                 showDialog(
                                   context: context,
                                   barrierDismissible: false,
@@ -186,8 +183,6 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                                     .child('photos')
                                     .child(photoId);
 
-                                print('Uploading to path: photos/$photoId');
-
                                 if (kIsWeb) {
                                   final bytes = await pickedFile.readAsBytes();
                                   await storageRef.putData(
@@ -203,7 +198,7 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
 
                                 final downloadUrl = await storageRef.getDownloadURL();
 
-                                // Save to Realtime Database with user ID
+                                // Save to Realtime Database with hierarchy info
                                 await FirebaseDatabase.instance
                                     .ref()
                                     .child('users')
@@ -218,18 +213,15 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
                                       'source': 'albums',
                                     });
 
-                                // Hide loading indicator
-                                Navigator.pop(context);
-
-                                // Add this line to reload photos
-                                await _loadAlbumPhotos();
+                                Navigator.pop(context); // Hide loading indicator
+                                await _loadAlbumPhotos(); // Reload photos
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Photo uploaded successfully!')),
                                 );
                               } catch (e) {
                                 print('Error uploading photo: $e');
-                                Navigator.pop(context); // Hide loading indicator
+                                Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Failed to upload photo: ${e.toString()}')),
                                 );
@@ -377,7 +369,8 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => BindersScreen(
-              binderName: albumName,
+              binderName: 'My Binder',
+              parentAlbumName: albumName,
             ),
           ),
         );

@@ -16,7 +16,12 @@ import '../screens/albums_screen.dart';
 
 class BindersScreen extends StatefulWidget {
   final String binderName;
-  const BindersScreen({super.key, required this.binderName});
+  final String? parentAlbumName;
+  const BindersScreen({
+    super.key, 
+    required this.binderName,
+    this.parentAlbumName,
+  });
 
   @override
   State<BindersScreen> createState() => _BindersScreenState();
@@ -34,8 +39,60 @@ class _BindersScreenState extends State<BindersScreen> {
     Future.microtask(() async {
       final appState = Provider.of<AppState>(context, listen: false);
       await appState.initializeUser();
+      await _loadBinders();
+      if (binders.isEmpty) {
+        // Create default binder if none exists
+        final currentUser = appState.currentUser;
+        if (currentUser != null) {
+          final binderId = DateTime.now().millisecondsSinceEpoch.toString();
+          await FirebaseDatabase.instance
+              .ref()
+              .child('users')
+              .child(currentUser.uid)
+              .child('binders')
+              .child(binderId)
+              .set({
+                'name': 'My Binder',
+                'createdAt': ServerValue.timestamp,
+                'userId': currentUser.uid,
+                'albumName': widget.parentAlbumName,
+              });
+          setState(() {
+            binders = ['My Binder'];
+          });
+        }
+      }
       _loadBinderPhotos();
     });
+  }
+
+  Future<void> _loadBinders() async {
+    try {
+      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      if (currentUser == null) return;
+
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('binders')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        setState(() {
+          binders = ['My Binder']; // Reset to default binder
+          data.forEach((key, value) {
+            if (value['name'] != null && 
+                value['albumName'] == widget.parentAlbumName) {
+              binders.add(value['name']);
+            }
+          });
+        });
+      }
+    } catch (e) {
+      print('Error loading binders: $e');
+    }
   }
 
   Future<void> _loadBinderPhotos() async {
@@ -60,7 +117,9 @@ class _BindersScreenState extends State<BindersScreen> {
 
         // Sort photos into binders
         data.forEach((key, value) {
-          if (value['source'] == 'binders' && value['binderName'] == widget.binderName) {
+          if (value['source'] == 'binders' && 
+              value['binderName'] == widget.binderName &&
+              value['albumName'] == widget.parentAlbumName) {
             final photo = PhotoData(
               id: key,
               file: null,
@@ -85,6 +144,101 @@ class _BindersScreenState extends State<BindersScreen> {
     }
   }
 
+  void _createNewBinder() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String newBinderName = '';
+        return AlertDialog(
+          backgroundColor: AppColors.dialogBackground,
+          title: const Text(
+            'Create New Binder',
+            style: TextStyle(color: AppColors.titleText),
+          ),
+          content: TextField(
+            style: const TextStyle(color: AppColors.titleText),
+            decoration: const InputDecoration(
+              hintText: 'Enter binder name',
+              hintStyle: TextStyle(color: Colors.grey),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.brown),
+              ),
+            ),
+            onChanged: (value) {
+              newBinderName = value;
+            },
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
+            ),
+            TextButton(
+              child: const Text('Create'),
+              onPressed: () async {
+                if (newBinderName.isNotEmpty) {
+                  try {
+                    final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+                    if (currentUser == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please log in to create binders')),
+                      );
+                      return;
+                    }
+
+                    // Create a unique ID for the binder
+                    final binderId = DateTime.now().millisecondsSinceEpoch.toString();
+
+                    // Save to Firebase with hierarchy info
+                    await FirebaseDatabase.instance
+                        .ref()
+                        .child('users')
+                        .child(currentUser.uid)
+                        .child('binders')
+                        .child(binderId)
+                        .set({
+                          'name': newBinderName,
+                          'createdAt': ServerValue.timestamp,
+                          'userId': currentUser.uid,
+                          'albumName': widget.parentAlbumName,
+                        });
+
+                    // Update local state
+                    setState(() {
+                      binders.add(newBinderName);
+                    });
+
+                    Navigator.of(context).pop();
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Binder created successfully!')),
+                    );
+                  } catch (e) {
+                    print('Error creating binder: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to create binder: ${e.toString()}')),
+                    );
+                  }
+                }
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.brown,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,7 +257,7 @@ class _BindersScreenState extends State<BindersScreen> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      // Back button row (matches other screens)
+                      // Back button row
                       Align(
                         alignment: Alignment.topLeft,
                         child: Padding(
@@ -187,18 +341,7 @@ class _BindersScreenState extends State<BindersScreen> {
 
                                 final downloadUrl = await storageRef.getDownloadURL();
 
-                                // Get user's display name
-                                final userSnapshot = await FirebaseDatabase.instance
-                                    .ref()
-                                    .child('users')
-                                    .child(currentUser.uid)
-                                    .child('profile')
-                                    .get();
-                                
-                                final userData = userSnapshot.value as Map<dynamic, dynamic>?;
-                                final displayName = userData?['displayName'] ?? currentUser.displayName ?? 'Unknown User';
-
-                                // Save to Realtime Database with user info
+                                // Save to Realtime Database with hierarchy info
                                 await FirebaseDatabase.instance
                                     .ref()
                                     .child('users')
@@ -209,8 +352,8 @@ class _BindersScreenState extends State<BindersScreen> {
                                       'url': downloadUrl,
                                       'timestamp': ServerValue.timestamp,
                                       'binderName': widget.binderName,
+                                      'albumName': widget.parentAlbumName,
                                       'userId': currentUser.uid,
-                                      'userDisplayName': displayName,  // Add display name
                                       'source': 'binders',
                                     });
 
@@ -232,7 +375,7 @@ class _BindersScreenState extends State<BindersScreen> {
                         ],
                       ),
                       const SizedBox(height: 74),
-                      // Binders Grid below
+                      // Binders and Photos Grid
                       Expanded(
                         child: _isLoading 
                           ? const Center(child: CircularProgressIndicator())
@@ -243,10 +386,19 @@ class _BindersScreenState extends State<BindersScreen> {
                                 mainAxisSpacing: 8,
                                 childAspectRatio: 0.75,
                               ),
-                              itemCount: binderPhotos[widget.binderName]?.length ?? 0,
+                              itemCount: binders.length + (binderPhotos[widget.binderName]?.length ?? 0),
                               itemBuilder: (context, index) {
-                                final photo = binderPhotos[widget.binderName]![index];
-                                return _buildPhotoCard(photo);
+                                if (index < binders.length) {
+                                  return _buildBinderCard(binders[index]);
+                                } else {
+                                  final photoIndex = index - binders.length;
+                                  if (binderPhotos[widget.binderName] != null && 
+                                      photoIndex < binderPhotos[widget.binderName]!.length) {
+                                    final photo = binderPhotos[widget.binderName]![photoIndex];
+                                    return _buildPhotoCard(photo);
+                                  }
+                                  return const SizedBox();
+                                }
                               },
                             ),
                       ),
@@ -261,71 +413,17 @@ class _BindersScreenState extends State<BindersScreen> {
     );
   }
 
-  void _createNewBinder() {
-    // Show dialog to enter binder name
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        String newBinderName = '';
-        return AlertDialog(
-          backgroundColor: AppColors.dialogBackground,
-          title: const Text(
-            'Create New Binder',
-            style: TextStyle(color: AppColors.titleText),
-          ),
-          content: TextField(
-            style: const TextStyle(color: AppColors.titleText),
-            decoration: const InputDecoration(
-              hintText: 'Enter binder name',
-              hintStyle: TextStyle(color: Colors.grey),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.brown),
-              ),
-            ),
-            onChanged: (value) {
-              newBinderName = value;
-            },
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.brown,
-              ),
-            ),
-            TextButton(
-              child: const Text('Create'),
-              onPressed: () {
-                if (newBinderName.isNotEmpty) {
-                  setState(() {
-                    binders.add(newBinderName);
-                  });
-                  Navigator.of(context).pop();
-                }
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.brown,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildBinderCard(String binderName) {
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => NotebooksScreen(binderName: binderName),
+            builder: (context) => NotebooksScreen(
+              notebookName: 'My Notebook',
+              parentBinderName: binderName,
+              parentAlbumName: widget.parentAlbumName!,
+            ),
           ),
         );
       },
@@ -421,6 +519,32 @@ class _BindersScreenState extends State<BindersScreen> {
         child: Image.network(
           photo.firebaseUrl!,
           fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading image: $error');
+            return Container(
+              color: Colors.grey[300],
+              child: const Center(
+                child: Icon(
+                  Icons.error_outline,
+                  color: Colors.grey,
+                  size: 32,
+                ),
+              ),
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              color: Colors.grey[300],
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

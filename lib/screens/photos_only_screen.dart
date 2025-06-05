@@ -16,10 +16,14 @@ import '../utils/photo_utils.dart';
 
 class PhotosOnlyScreen extends StatefulWidget {
   final String notebookName;
+  final String parentBinderName;
+  final String parentAlbumName;
 
   const PhotosOnlyScreen({
     super.key,
     required this.notebookName,
+    required this.parentBinderName,
+    required this.parentAlbumName,
   });
 
   @override
@@ -46,14 +50,47 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
     appState.setLoading(true);
 
     try {
-      final photos = await PhotoUtils.loadUserPhotos(source: 'photos_only');
-      appState.setPhotos(photos);
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final snapshot = await FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('photos')
+          .get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final List<PhotoData> photos = [];
+
+        data.forEach((key, value) {
+          if (value['source'] == 'notebooks' && 
+              value['notebookName'] == widget.notebookName &&
+              value['binderName'] == widget.parentBinderName &&
+              value['albumName'] == widget.parentAlbumName) {
+            final photo = PhotoData(
+              id: key,
+              file: null,
+              firebaseUrl: value['url'],
+              title: value['title'] ?? 'Photo Details',
+              comment: value['comment'] ?? '',
+              userId: currentUser.uid,
+              isLiked: false,
+              likesCount: 0,
+            );
+            photos.add(photo);
+          }
+        });
+
+        appState.setPhotos(photos);
+      }
     } catch (e) {
-      if (mounted) {  // Check again before showing error
+      if (mounted) {
         appState.setError(e.toString());
       }
     } finally {
-      if (mounted) {  // Check again before updating loading state
+      if (mounted) {
         appState.setLoading(false);
       }
     }
@@ -113,7 +150,7 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
         userId: userId,
       );
 
-      // Save to Realtime Database
+      // Save to Realtime Database with hierarchy info
       final DatabaseReference photoRef = FirebaseDatabase.instance
           .ref()
           .child('users')
@@ -122,12 +159,15 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
           .child(photoId);
 
       await photoRef.set({
-        'firebaseUrl': downloadURL,
+        'url': downloadURL,
         'title': newPhoto.title,
         'isLiked': newPhoto.isLiked,
         'comment': newPhoto.comment,
         'timestamp': ServerValue.timestamp,
-        'source': 'photos_only',
+        'source': 'notebooks',
+        'notebookName': widget.notebookName,
+        'binderName': widget.parentBinderName,
+        'albumName': widget.parentAlbumName,
       });
 
       // Update app state

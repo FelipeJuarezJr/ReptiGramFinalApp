@@ -505,10 +505,10 @@ class _PhotosOnlyScreenState extends State<PhotosOnlyScreen> {
                                       backgroundColor: AppColors.dialogBackground,
                                       title: const Text(
                                         'Edit Title',
-                                        style: TextStyle(color: Colors.white),
+                                        style: TextStyle(color: Colors.grey),
                                       ),
                                       content: TextField(
-                                        style: const TextStyle(color: Colors.white),
+                                        style: const TextStyle(color: Colors.black),
                                         decoration: const InputDecoration(
                                           hintText: 'Enter new title',
                                           hintStyle: TextStyle(color: Colors.grey),

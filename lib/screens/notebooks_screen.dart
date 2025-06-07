@@ -381,51 +381,460 @@ class _NotebooksScreenState extends State<NotebooksScreen> {
   }
 
   Widget _buildPhotoCard(PhotoData photo) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          photo.firebaseUrl!,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            print('Error loading image: $error');
-            return Container(
-              color: Colors.grey[300],
-              child: const Center(
+    return InkWell(
+      onTap: () => _showEnlargedImage(photo),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.inputGradient,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Image.network(
+                photo.firebaseUrl!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (context, error, stackTrace) {
+                  print('Error loading image: $error');
+                  return Container(
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: Icon(
+                        Icons.error_outline,
+                        color: Colors.grey,
+                        size: 32,
+                      ),
+                    ),
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: Colors.grey[300],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Title overlay
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.transparent,
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
+                  ),
+                ),
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  photo.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            // Like icon
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(
-                  Icons.error_outline,
-                  color: Colors.grey,
-                  size: 32,
+                  photo.isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: photo.isLiked ? Colors.red : Colors.white,
+                  size: 20,
                 ),
               ),
-            );
-          },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: Colors.grey[300],
-              child: Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  void _showEnlargedImage(PhotoData photo) {
+    if (photo.id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid photo ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    String photoTitle = photo.title;
+    String comment = photo.comment;
+    bool isLiked = photo.isLiked;
+    bool hasUnsavedChanges = false;
+    String originalTitle = photoTitle;
+    String originalComment = comment;
+    bool originalIsLiked = isLiked;
+    
+    final TextEditingController commentController = TextEditingController(text: comment);
+    commentController.selection = TextSelection.fromPosition(
+      TextPosition(offset: comment.length)
+    );
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header with editable title and close button
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    String newTitle = photoTitle;
+                                    return AlertDialog(
+                                      backgroundColor: AppColors.dialogBackground,
+                                      title: const Text(
+                                        'Edit Title',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                      content: TextField(
+                                        style: const TextStyle(color: Colors.black),
+                                        decoration: const InputDecoration(
+                                          hintText: 'Enter new title',
+                                          hintStyle: TextStyle(color: Colors.grey),
+                                        ),
+                                        onChanged: (value) {
+                                          newTitle = value;
+                                        },
+                                        controller: TextEditingController(text: photoTitle),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('Cancel'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: const Text('Save'),
+                                          onPressed: () {
+                                            setState(() {
+                                              photoTitle = newTitle;
+                                              hasUnsavedChanges = photoTitle != originalTitle || comment != originalComment;
+                                            });
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  Text(
+                                    photoTitle,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                            onPressed: () {
+                              if (hasUnsavedChanges) {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      backgroundColor: AppColors.dialogBackground,
+                                      title: const Text(
+                                        'Unsaved Changes',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      content: const Text(
+                                        'Do you want to save your changes?',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          child: const Text('Discard'),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: const Text('Save'),
+                                          onPressed: () async {
+                                            photo.title = photoTitle;
+                                            photo.isLiked = isLiked;
+                                            photo.comment = comment;
+                                            
+                                            await _savePhotoChanges(photo);
+                                            
+                                            setState(() {
+                                              originalTitle = photoTitle;
+                                              originalComment = comment;
+                                              originalIsLiked = isLiked;
+                                              hasUnsavedChanges = false;
+                                            });
+                                            
+                                            this.setState(() {});
+                                            
+                                            Navigator.of(context).pop();
+                                            Navigator.of(context).pop();
+                                            
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Changes saved successfully!'),
+                                                backgroundColor: Colors.green,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              } else {
+                                Navigator.of(context).pop();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Image
+                    Flexible(
+                      child: InteractiveViewer(
+                        panEnabled: true,
+                        minScale: 0.5,
+                        maxScale: 4,
+                        child: Image.network(
+                          photo.firebaseUrl!,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    // Comment section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Directionality(
+                        textDirection: TextDirection.ltr,
+                        child: TextField(
+                          controller: commentController,
+                          style: const TextStyle(color: Colors.white),
+                          textAlign: TextAlign.left,
+                          keyboardType: TextInputType.multiline,
+                          maxLines: null,
+                          decoration: const InputDecoration(
+                            hintText: 'Add a comment...',
+                            hintStyle: TextStyle(color: Colors.grey),
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 8.0,
+                              horizontal: 12.0,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              comment = value;
+                              hasUnsavedChanges = photoTitle != originalTitle || comment != originalComment;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    // Footer with timestamp, like button, and save button
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                DateTime.now().toString().split('.')[0],
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  isLiked ? Icons.favorite : Icons.favorite_border,
+                                  color: isLiked ? Colors.red : Colors.white,
+                                  size: 28,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    isLiked = !isLiked;
+                                    hasUnsavedChanges = photoTitle != originalTitle || 
+                                                      comment != originalComment ||
+                                                      isLiked != originalIsLiked;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          if (hasUnsavedChanges)
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () async {
+                                photo.title = photoTitle;
+                                photo.isLiked = isLiked;
+                                photo.comment = comment;
+                                
+                                await _savePhotoChanges(photo);
+                                
+                                setState(() {
+                                  originalTitle = photoTitle;
+                                  originalComment = comment;
+                                  originalIsLiked = isLiked;
+                                  hasUnsavedChanges = false;
+                                });
+                                
+                                this.setState(() {});
+                                
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Changes saved successfully!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              },
+                              child: const Text('Save Changes'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
+
+  Future<void> _savePhotoChanges(PhotoData photo) async {
+    try {
+      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      if (currentUser == null) {
+        throw Exception('No user logged in');
+      }
+
+      if (photo.id.isEmpty) {
+        throw Exception('Photo ID cannot be empty');
+      }
+
+      final DatabaseReference photoRef = FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(currentUser.uid)
+          .child('photos')
+          .child(photo.id);
+
+      final updates = {
+        'title': photo.title.trim(),
+        'comment': photo.comment.trim(),
+        'isLiked': photo.isLiked,
+        'lastModified': ServerValue.timestamp,
+      };
+
+      await photoRef.update(updates);
+
+      if (mounted) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.updatePhoto(photo);
+      }
+
+    } catch (e) {
+      print('Error saving photo changes: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save changes: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      rethrow;
+    }
   }
 
   void _createNewNotebook() {

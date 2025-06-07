@@ -363,6 +363,8 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
   }
 
   Widget _buildAlbumCard(String albumName) {
+    final photos = albumPhotos[albumName] ?? [];
+    
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -387,24 +389,93 @@ class _AlbumsScreenState extends State<AlbumsScreen> {
             ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            const Icon(
-              Icons.folder,
-              size: 48,
-              color: AppColors.titleText,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              albumName,
-              style: const TextStyle(
-                color: AppColors.titleText,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            if (photos.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Column(
+                      children: [
+                        // Large image on top
+                        if (photos.isNotEmpty)
+                          Expanded(
+                            flex: 2,
+                            child: Image.network(
+                              photos[0].firebaseUrl!,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                );
+                              },
+                            ),
+                          ),
+                        // Three smaller images below
+                        if (photos.length > 1)
+                          Expanded(
+                            flex: 1,
+                            child: Row(
+                              children: [
+                                for (var i = 1; i < photos.length && i < 4; i++)
+                                  Expanded(
+                                    child: Image.network(
+                                      photos[i].firebaseUrl!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: Colors.grey[300],
+                                          child: const Icon(Icons.broken_image, color: Colors.grey),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                // Fill remaining space with empty containers if needed
+                                for (var i = photos.length; i < 4; i++)
+                                  Expanded(
+                                    child: Container(
+                                      color: Colors.grey[300],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
+            // Album name overlay
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.7),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  albumName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ),
           ],
         ),

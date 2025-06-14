@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../styles/colors.dart';
 import '../screens/login_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
-class NavDrawer extends StatelessWidget {
+class NavDrawer extends StatefulWidget {
   final String? userEmail;
   final String? userName;
   final String? userPhotoUrl;
@@ -14,6 +17,106 @@ class NavDrawer extends StatelessWidget {
     this.userName,
     this.userPhotoUrl,
   }) : super(key: key);
+
+  @override
+  State<NavDrawer> createState() => _NavDrawerState();
+}
+
+class _NavDrawerState extends State<NavDrawer> {
+  Uint8List? _selectedImageBytes;
+  bool _isUploading = false;
+  String? _photoUrl;
+  bool _isHovering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    _photoUrl = user?.photoURL ?? widget.userPhotoUrl;
+  }
+
+  Future<void> _uploadImage(Uint8List imageBytes) async {
+    try {
+      setState(() {
+        _isUploading = true;
+      });
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      // Create a reference to the user's profile image
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child(user.uid)
+          .child('avatar.jpg');
+
+      // Upload the image
+      await storageRef.putData(imageBytes);
+
+      // Get the download URL
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      // Update the user's profile
+      await user.updatePhotoURL(downloadUrl);
+      await user.reload();
+      final updatedUser = FirebaseAuth.instance.currentUser;
+
+      setState(() {
+        _selectedImageBytes = imageBytes;
+        _photoUrl = updatedUser?.photoURL;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating profile picture: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    
+    // Show a dialog to let user choose between camera and gallery
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Choose Profile Image'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                  if (image != null) {
+                    final bytes = await image.readAsBytes();
+                    await _uploadImage(bytes);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,15 +131,61 @@ class NavDrawer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundImage: userPhotoUrl != null
-                      ? NetworkImage(userPhotoUrl!)
-                      : const AssetImage('assets/img/reptiGramLogo.png') as ImageProvider,
+                MouseRegion(
+                  onEnter: (_) => setState(() => _isHovering = true),
+                  onExit: (_) => setState(() => _isHovering = false),
+                  child: GestureDetector(
+                    onTap: _isUploading ? null : _pickImage,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: _selectedImageBytes != null
+                              ? MemoryImage(_selectedImageBytes!)
+                              : (_photoUrl ?? widget.userPhotoUrl) != null
+                                  ? NetworkImage((_photoUrl ?? widget.userPhotoUrl)!)
+                                  : const AssetImage('assets/img/reptiGramLogo.png') as ImageProvider,
+                        ),
+                        if (_isUploading)
+                          const Positioned.fill(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        if (_isHovering && !_isUploading)
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.edit, color: Colors.white, size: 20),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Change',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  userName ?? 'User',
+                  widget.userName ?? 'User',
                   style: const TextStyle(
                     color: AppColors.titleText,
                     fontSize: 18,
@@ -44,7 +193,7 @@ class NavDrawer extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  userEmail ?? '',
+                  widget.userEmail ?? '',
                   style: const TextStyle(
                     color: AppColors.titleText,
                     fontSize: 14,

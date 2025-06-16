@@ -20,7 +20,6 @@ class Header extends StatefulWidget {
 
 class _HeaderState extends State<Header> {
   late int _selectedIndex;
-  final GlobalKey<FeedState> _feedKey = GlobalKey();
 
   @override
   void initState() {
@@ -53,7 +52,7 @@ class _HeaderState extends State<Header> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const FeedScreen(),
+              builder: (context) => const Feed(),
             ),
           );
         }
@@ -111,20 +110,26 @@ class _HeaderState extends State<Header> {
                   color: const Color(0xFFf6e29b),
                   onPressed: () {
                     print('Grid icon pressed');
-                    _feedKey.currentState?.setFeedType(FeedType.images);
+                    FeedState.setFeedType(FeedType.images);
+                    setState(() {}); // Trigger rebuild
                   },
                 ),
                 IconButton(
                   icon: const Icon(Icons.star),
                   color: const Color(0xFFf6e29b),
-                  onPressed: () {},
+                  onPressed: () {
+                    print('Star icon pressed');
+                    FeedState.setFeedType(FeedType.favorites);
+                    setState(() {}); // Trigger rebuild
+                  },
                 ),
                 IconButton(
                   icon: const Icon(Icons.play_circle_outline),
                   color: const Color(0xFFf6e29b),
                   onPressed: () {
                     print('Video icon pressed');
-                    _feedKey.currentState?.setFeedType(FeedType.videos);
+                    FeedState.setFeedType(FeedType.videos);
+                    setState(() {}); // Trigger rebuild
                   },
                 ),
                 IconButton(
@@ -132,7 +137,8 @@ class _HeaderState extends State<Header> {
                   color: const Color(0xFFf6e29b),
                   onPressed: () {
                     print('People icon pressed');
-                    _feedKey.currentState?.setFeedType(FeedType.groups);
+                    FeedState.setFeedType(FeedType.groups);
+                    setState(() {}); // Trigger rebuild
                   },
                 ),
               ],
@@ -153,18 +159,46 @@ enum FeedType {
   images,
   videos,
   groups,
+  favorites,
 }
 
-// Feed state class (you'll need to implement this)
+// Feed state class
 class FeedState extends State<Feed> {
-  void setFeedType(FeedType type) {
-    // Implement feed type switching logic
+  static FeedType _currentType = FeedType.images;
+  static final ValueNotifier<FeedType> _typeNotifier = ValueNotifier<FeedType>(_currentType);
+
+  @override
+  void initState() {
+    super.initState();
+    print('FeedState initialized with type: $_currentType');
+  }
+
+  static void setFeedType(FeedType type) {
+    print('Setting feed type to: $type');
+    _currentType = type;
+    _typeNotifier.value = type;
+    print('Feed type changed to: $type');
   }
 
   @override
   Widget build(BuildContext context) {
-    // Implement feed widget
-    return Container();
+    return ValueListenableBuilder<FeedType>(
+      valueListenable: _typeNotifier,
+      builder: (context, type, child) {
+        print('Building Feed with type: $type');
+        switch (type) {
+          case FeedType.images:
+            return const FeedScreen();
+          case FeedType.videos:
+            return const Center(child: Text('Videos coming soon'));
+          case FeedType.groups:
+            return const Center(child: Text('Groups coming soon'));
+          case FeedType.favorites:
+            print('Building favorites view');
+            return const FeedScreen(showLikedOnly: true);
+        }
+      },
+    );
   }
 }
 

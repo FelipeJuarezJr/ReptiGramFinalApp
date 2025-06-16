@@ -8,7 +8,12 @@ import '../models/photo_data.dart';
 import '../state/app_state.dart';
 
 class FeedScreen extends StatefulWidget {
-  const FeedScreen({super.key});
+  final bool showLikedOnly;
+  
+  const FeedScreen({
+    super.key,
+    this.showLikedOnly = false,
+  });
 
   @override
   State<FeedScreen> createState() => _FeedScreenState();
@@ -21,6 +26,7 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   void initState() {
     super.initState();
+    print('FeedScreen initialized with showLikedOnly: ${widget.showLikedOnly}');
     Future.microtask(() async {
       final appState = Provider.of<AppState>(context, listen: false);
       await appState.initializeUser(); // Make sure user is initialized
@@ -30,11 +36,25 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
+  @override
+  void didUpdateWidget(FeedScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.showLikedOnly != widget.showLikedOnly) {
+      print('Feed type changed, reloading photos');
+      _loadPhotos();
+    }
+  }
+
   Future<void> _loadPhotos() async {
     if (!mounted) return;
+
     setState(() => _isLoading = true);
+    print('Loading photos with showLikedOnly: ${widget.showLikedOnly}');
 
     try {
+      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+      print('Current user: ${currentUser?.uid}');
+      
       // Get all photos from users
       final usersSnapshot = await FirebaseDatabase.instance
           .ref()
@@ -51,7 +71,6 @@ class _FeedScreenState extends State<FeedScreen> {
 
       final List<PhotoData> allPhotos = [];
       final usersData = usersSnapshot.value as Map<dynamic, dynamic>;
-      final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
       
       // Convert likes snapshot to Map for faster lookups
       final likesData = (likesSnapshot.value as Map<dynamic, dynamic>?) ?? {};
@@ -91,11 +110,30 @@ class _FeedScreenState extends State<FeedScreen> {
       // Sort by timestamp (newest first)
       allPhotos.sort((a, b) => (b.timestamp ?? 0).compareTo(a.timestamp ?? 0));
 
+      // Filter liked photos if needed
+      final filteredPhotos = widget.showLikedOnly 
+          ? allPhotos.where((photo) => photo.isLiked).toList()
+          : allPhotos;
+
+      print('Total photos: ${allPhotos.length}');
+      print('Filtered photos: ${filteredPhotos.length}');
+      print('Show liked only: ${widget.showLikedOnly}');
+
       if (mounted) {
         setState(() {
-          _photos = allPhotos;
+          _photos = filteredPhotos;
           _isLoading = false;
         });
+
+        // Show message if no liked photos and user is logged in
+        if (widget.showLikedOnly && filteredPhotos.isEmpty && currentUser != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You haven\'t liked any photos yet'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } catch (e) {
       print('Error loading photos: $e');
@@ -267,6 +305,8 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = Provider.of<AppState>(context, listen: false).currentUser;
+    
     return Scaffold(
       body: Container(
         height: MediaQuery.of(context).size.height,
@@ -281,29 +321,41 @@ class _FeedScreenState extends State<FeedScreen> {
               Expanded(
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : _photos.isEmpty
+                    : widget.showLikedOnly && currentUser == null
                         ? const Center(
                             child: Text(
-                              'No photos available',
+                              'Please log in to view liked photos',
                               style: TextStyle(
                                 color: AppColors.titleText,
                                 fontSize: 18,
                               ),
                             ),
                           )
-                        : RefreshIndicator(
-                            onRefresh: _loadPhotos,
-                            child: GridView.builder(
-                              padding: const EdgeInsets.all(8.0),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 8.0,
-                                mainAxisSpacing: 8.0,
+                        : _photos.isEmpty
+                            ? Center(
+                                child: Text(
+                                  widget.showLikedOnly 
+                                      ? 'No liked photos yet'
+                                      : 'No photos available',
+                                  style: const TextStyle(
+                                    color: AppColors.titleText,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              )
+                            : RefreshIndicator(
+                                onRefresh: _loadPhotos,
+                                child: GridView.builder(
+                                  padding: const EdgeInsets.all(8.0),
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    crossAxisSpacing: 8.0,
+                                    mainAxisSpacing: 8.0,
+                                  ),
+                                  itemCount: _photos.length,
+                                  itemBuilder: (context, index) => _buildGridItem(_photos[index]),
+                                ),
                               ),
-                              itemCount: _photos.length,
-                              itemBuilder: (context, index) => _buildGridItem(_photos[index]),
-                            ),
-                          ),
               ),
             ],
           ),

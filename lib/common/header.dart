@@ -125,21 +125,13 @@ class _HeaderState extends State<Header> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.play_circle_outline),
-                  color: const Color(0xFFf6e29b),
-                  onPressed: () {
-                    print('Video icon pressed');
-                    FeedState.setFeedType(FeedType.videos);
-                    setState(() {}); // Trigger rebuild
-                  },
+                  color: Colors.grey[400],
+                  onPressed: null, // Disable the button
                 ),
                 IconButton(
                   icon: const Icon(Icons.people_outline),
-                  color: const Color(0xFFf6e29b),
-                  onPressed: () {
-                    print('People icon pressed');
-                    FeedState.setFeedType(FeedType.groups);
-                    setState(() {}); // Trigger rebuild
-                  },
+                  color: Colors.grey[400],
+                  onPressed: null, // Disable the button
                 ),
               ],
             ),

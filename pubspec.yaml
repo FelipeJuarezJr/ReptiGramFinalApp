@@ -8,6 +8,7 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
+  url_launcher: ^6.2.4
   flutter:
     sdk: flutter
   intl: ^0.18.0

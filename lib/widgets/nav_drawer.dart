@@ -128,76 +128,103 @@ class _NavDrawerState extends State<NavDrawer> {
             decoration: BoxDecoration(
               gradient: AppColors.mainGradient,
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                MouseRegion(
-                  onEnter: (_) => setState(() => _isHovering = true),
-                  onExit: (_) => setState(() => _isHovering = false),
-                  child: GestureDetector(
-                    onTap: _isUploading ? null : _pickImage,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: _selectedImageBytes != null
-                              ? MemoryImage(_selectedImageBytes!)
-                              : (_photoUrl ?? widget.userPhotoUrl) != null
-                                  ? NetworkImage((_photoUrl ?? widget.userPhotoUrl)!)
-                                  : const AssetImage('assets/img/reptiGramLogo.png') as ImageProvider,
-                        ),
-                        if (_isUploading)
-                          const Positioned.fill(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          ),
-                        if (_isHovering && !_isUploading)
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.edit, color: Colors.white, size: 20),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    'Change',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                // Close button on the left
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(
+                    Icons.close,
+                    color: AppColors.titleText,
+                    size: 24,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                // User info on the right
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: MouseRegion(
+                        onEnter: (_) => setState(() => _isHovering = true),
+                        onExit: (_) => setState(() => _isHovering = false),
+                        child: GestureDetector(
+                          onTap: _isUploading ? null : _pickImage,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundImage: _selectedImageBytes != null
+                                    ? MemoryImage(_selectedImageBytes!)
+                                    : (_photoUrl ?? widget.userPhotoUrl) != null
+                                        ? NetworkImage((_photoUrl ?? widget.userPhotoUrl)!)
+                                        : const AssetImage('assets/img/reptiGramLogo.png') as ImageProvider,
+                              ),
+                              if (_isUploading)
+                                const Positioned.fill(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                              if (_isHovering && !_isUploading)
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.edit, color: Colors.white, size: 20),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          'Change',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
+                                ),
+                            ],
                           ),
-                      ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  widget.userName ?? 'User',
-                  style: const TextStyle(
-                    color: AppColors.titleText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  widget.userEmail ?? '',
-                  style: const TextStyle(
-                    color: AppColors.titleText,
-                    fontSize: 14,
-                  ),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        widget.userName ?? 'User',
+                        style: const TextStyle(
+                          color: AppColors.titleText,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        widget.userEmail ?? '',
+                        style: const TextStyle(
+                          color: AppColors.titleText,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

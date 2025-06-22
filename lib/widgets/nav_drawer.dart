@@ -5,6 +5,7 @@ import '../styles/colors.dart';
 import '../screens/login_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'package:url_launcher/url_launcher.dart';
 
 class NavDrawer extends StatefulWidget {
   final String? userEmail;
@@ -274,6 +275,29 @@ class _NavDrawerState extends State<NavDrawer> {
                 }
               }
             },
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: () async {
+                const url = 'https://www.paypal.com/donate?campaign_id=4ALPDNVGWDRNW'
+;
+                if (await canLaunchUrl(Uri.parse(url))) {
+                  await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                } else {
+                  throw 'Could not launch $url';
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade700,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text(
+                'Donate to ReptiGram',
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
           ),
         ],
       ),

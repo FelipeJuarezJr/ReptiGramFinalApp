@@ -1,27 +1,67 @@
 {
   "rules": {
     ".read": true,
-    "photos": {
+    ".write": "auth != null",
+    
+    "posts": {
+      ".read": true,
+      ".write": "auth != null",
+      ".indexOn": "timestamp",
+      "$postId": {
+        ".read": true,
+        ".write": "auth != null",
+        "likes": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "comments": {
+          ".read": true,
+          ".write": "auth != null"
+        }
+      }
+    },
+    
+    "usernames": {
       ".read": true,
       ".write": "auth != null"
     },
+    
     "users": {
       "$userId": {
         ".read": true,
+        ".write": "auth != null && auth.uid == $userId",
         "photos": {
           ".read": true,
           ".write": "auth != null",
           ".indexOn": "source",
           "$photoId": {
             ".read": true,
+            ".write": "auth != null",
             "likes": {
               ".read": true,
               ".write": "auth != null"
             },
             ".indexOn": ["source"]
           }
+        },
+        "binders": {
+          ".read": true,
+          ".write": "auth != null && auth.uid == $userId"
+        },
+        "albums": {
+          ".read": true,
+          ".write": "auth != null && auth.uid == $userId"
+        },
+        "notebooks": {
+          ".read": true,
+          ".write": "auth != null && auth.uid == $userId"
         }
       }
+    },
+    
+    "photos": {
+      ".read": true,
+      ".write": "auth != null"
     }
   }
 }
